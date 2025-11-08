@@ -1,119 +1,101 @@
 import os
 import json
-from flask import Flask, jsonify, request, abort
-import requests
+from flask import Flask, request, jsonify
+import firebase_admin
+from firebase_admin import credentials, db
 
 app = Flask(__name__)
+ADMIN_SECRET_KEY = os.environ.get("MODUARCH_SECRET_KEY")
 
-FIREBASE_URL = os.environ.get('FIREBASE_URL')
-FIREBASE_SECRET = os.environ.get('FIREBASE_SECRET')
-
-if not FIREBASE_URL or not FIREBASE_SECRET:
-    print("FATAL ERROR: Переменные FIREBASE_URL или FIREBASE_SECRET не установлены.")
-    exit(1)
-
-# Формируем базовый URL для доступа к API с секретным ключом
-# Добавляем '.json' для корректного REST API запроса
-BASE_MODULES_URL = f"{FIREBASE_URL.rstrip('/')}/modules.json?auth={FIREBASE_SECRET}"
-
-
-def module_to_dict(key, data):
-    return {
-        'id': key, 
-        'name': data.get('name', 'N/A'),
-        'description': data.get('description', 'Нет описания'),
-        'keywords': data.get('keywords', []),
-        'link': data.get('link', 'Нет ссылки')
-    }
-
-@app.route('/api/v1/modules', methods=['GET', 'POST'])
-def handle_modules():
-    if request.method == 'GET':
-        
-        try:
-            response = requests.get(BASE_MODULES_URL)
-            response.raise_for_status() 
-            modules_data = response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Firebase GET Error: {e}")
-            abort(500, description="Ошибка сервера при получении данных из Firebase.")
-        
-        modules_list = []
-        if modules_data:
-            for key, data in modules_data.items():
-                modules_list.append(module_to_dict(key, data))
-        
-        return jsonify({
-            "status": "success",
-            "count": len(modules_list),
-            "modules": modules_list
-        })
+try:
+    firebase_config_json = os.environ.get("FIREBASE_SECRET")
     
-    elif request.method == 'POST':
-        if not request.json or 'name' not in request.json or 'link' not in request.json:
-            abort(400, description="Необходимо указать 'name' и 'link' в теле запроса.")
+    if not firebase_config_json:
+        raise ValueError("FIREBASE_SECRET environment variable not found.")
 
-        new_module_data = {
-            'name': request.json['name'],
-            'description': request.json.get('description', 'Описание отсутствует'),
-            'keywords': request.json.get('keywords', []), 
-            'link': request.json['link']
-        }
-        
-        try:
-            post_url = f"{FIREBASE_URL.rstrip('/')}/modules.json?auth={FIREBASE_SECRET}"
-            response = requests.post(post_url, json=new_module_data)
-            response.raise_for_status()
+    cred_dict = json.loads(firebase_config_json)
+    cred = credentials.Certificate(cred_dict)
 
-            result = response.json()
-            new_module_id = result.get('name')
-            
-            return jsonify({
-                "status": "created",
-                "module": module_to_dict(new_module_id, new_module_data)
-            }), 201
-            
-        except requests.exceptions.RequestException as e:
-            print(f"Firebase Post Error: {e}")
-            abort(500, description="Ошибка сервера при сохранении данных в Firebase.")
-
-
-@app.route('/api/v1/modules/search', methods=['GET'])
-def search_api():
-    query = request.args.get('query', '').strip().lower()
+    database_url = os.environ.get("FIREBASE_DB_URL", "https://ВАША-БАЗА.firebaseio.com") 
     
-    if not query:
-        return jsonify({
-            "status": "error",
-            "message": "Параметр 'query' обязателен для поиска."
-        }), 400
-    
-    try:
-        response = requests.get(BASE_MODULES_URL)
-        response.raise_for_status()
-        modules_data = response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Firebase GET Error: {e}")
-        abort(500, description="Ошибка сервера при получении данных.")
-        
-    results_list = []
-    if modules_data:
-        for key, data in modules_data.items():
-            module_name = data.get('name', '').lower()
-            module_desc = data.get('description', '').lower()
-            module_keywords = [k.lower() for k in data.get('keywords', [])]
-
-            if query in module_name or query in module_desc or query in ' '.join(module_keywords):
-                results_list.append(module_to_dict(key, data))
-
-    return jsonify({
-        "status": "success",
-        "query": query,
-        "count": len(results_list),
-        "modules": results_list
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': database_url
     })
+    
+    root_ref = db.reference('/') 
 
+except Exception as e:
+    print(f"FATAL ERROR: Failed to initialize Firebase: {e}")
+    root_ref = None 
+
+def is_super_admin(req):
+    return req.headers.get('X-Super-Admin-Key') == ADMIN_SECRET_KEY
+
+def get_moderators():
+    if root_ref:
+        moderators = root_ref.child('moduarch_roles/moderators').get()
+        return moderators if moderators else []
+    return []
+
+@app.route('/', methods=['GET'])
+def index():
+    return "Moduarch API is running.", 200
+
+@app.route('/api/v1/admin/moderators', methods=['POST'])
+def add_moderator():
+    if not is_super_admin(request):
+        return jsonify({"message": "Access denied"}), 403
+
+    if not root_ref:
+        return jsonify({"message": "Firebase not initialized"}), 500
+
+    try:
+        data = request.get_json()
+        telegram_id = str(data.get('telegram_id'))
+        
+        if not telegram_id.isdigit():
+            return jsonify({"message": "Invalid Telegram ID"}), 400
+
+        current_mods = get_moderators()
+        if telegram_id not in current_mods:
+            current_mods.append(telegram_id)
+            root_ref.child('moduarch_roles/moderators').set(current_mods)
+            return jsonify({"message": f"Moderator {telegram_id} added successfully"}), 200
+        else:
+            return jsonify({"message": f"Moderator {telegram_id} already exists"}), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Internal API error: {e}"}), 500
+
+@app.route('/api/v1/admin/moderators', methods=['GET'])
+def list_moderators():
+    if not is_super_admin(request):
+        return jsonify({"message": "Access denied"}), 403
+    
+    moderators = get_moderators()
+    return jsonify({"moderators": moderators}), 200
+
+@app.route('/api/v1/modules/publish', methods=['POST'])
+def publish_module():
+    if not root_ref:
+        return jsonify({"message": "Firebase not initialized"}), 500
+
+    try:
+        module_data = request.get_json()
+        module_name = module_data.get('name')
+        
+        if not module_name:
+            return jsonify({"message": "Module name is required"}), 400
+
+        module_key = module_name.lower().replace(' ', '_')
+        
+        root_ref.child(f'moduarch_modules/{module_key}').set(module_data)
+        
+        return jsonify({"message": f"Module '{module_name}' published successfully"}), 201
+
+    except Exception as e:
+        return jsonify({"message": f"Internal API error during publish: {e}"}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
