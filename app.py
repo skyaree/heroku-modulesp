@@ -1,7 +1,7 @@
 import os
 import json
 from flask import Flask, jsonify, request, abort
-from firebase import firebase
+import requests
 
 app = Flask(__name__)
 
@@ -12,18 +12,9 @@ if not FIREBASE_URL or not FIREBASE_SECRET:
     print("FATAL ERROR: Переменные FIREBASE_URL или FIREBASE_SECRET не установлены.")
     exit(1)
 
-try:
-    fb_app = firebase.FirebaseApplication(FIREBASE_URL, authentication=None)
-    
-    fb_app.authentication = firebase.FirebaseAuthentication(
-        FIREBASE_SECRET, 
-        None, 
-        extra={'id': 'render_api_user'}
-    )
-
-except Exception as e:
-    print(f"Ошибка инициализации Firebase: {e}")
-    exit(1)
+# Формируем базовый URL для доступа к API с секретным ключом
+# Добавляем '.json' для корректного REST API запроса
+BASE_MODULES_URL = f"{FIREBASE_URL.rstrip('/')}/modules.json?auth={FIREBASE_SECRET}"
 
 
 def module_to_dict(key, data):
@@ -38,7 +29,14 @@ def module_to_dict(key, data):
 @app.route('/api/v1/modules', methods=['GET', 'POST'])
 def handle_modules():
     if request.method == 'GET':
-        modules_data = fb_app.get('/modules', None)
+        
+        try:
+            response = requests.get(BASE_MODULES_URL)
+            response.raise_for_status() 
+            modules_data = response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Firebase GET Error: {e}")
+            abort(500, description="Ошибка сервера при получении данных из Firebase.")
         
         modules_list = []
         if modules_data:
@@ -63,8 +61,11 @@ def handle_modules():
         }
         
         try:
-            result = fb_app.post('/modules', new_module_data)
-            
+            post_url = f"{FIREBASE_URL.rstrip('/')}/modules.json?auth={FIREBASE_SECRET}"
+            response = requests.post(post_url, json=new_module_data)
+            response.raise_for_status()
+
+            result = response.json()
             new_module_id = result.get('name')
             
             return jsonify({
@@ -72,7 +73,7 @@ def handle_modules():
                 "module": module_to_dict(new_module_id, new_module_data)
             }), 201
             
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print(f"Firebase Post Error: {e}")
             abort(500, description="Ошибка сервера при сохранении данных в Firebase.")
 
@@ -87,8 +88,14 @@ def search_api():
             "message": "Параметр 'query' обязателен для поиска."
         }), 400
     
-    modules_data = fb_app.get('/modules', None)
-    
+    try:
+        response = requests.get(BASE_MODULES_URL)
+        response.raise_for_status()
+        modules_data = response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Firebase GET Error: {e}")
+        abort(500, description="Ошибка сервера при получении данных.")
+        
     results_list = []
     if modules_data:
         for key, data in modules_data.items():
