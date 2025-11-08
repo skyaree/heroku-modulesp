@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Поиск Heroku Модулей</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .module { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        .module h3 a { color: #007bff; text-decoration: none; }
+        .module p { margin: 5px 0; }
+        .search-form { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔎 Каталог Heroku Модулей</h1>
+
+    <form method="POST" class="search-form">
+        <input type="text" name="query" placeholder="Искать по названию, описанию или тегам (напр., python)" 
+               value="{{ query }}" size="50">
+        <button type="submit">Найти</button>
+    </form>
+
+    <p>Найдено модулей: <strong>{{ modules|length }}</strong></p>
+
+    {% for module in modules %}
+    <div class="module">
+        <h3><a href="{{ module.link }}" target="_blank">{{ module.name }}</a></h3>
+        <p><strong>Описание:</strong> {{ module.description }}</p>
+        <p><strong>Теги:</strong> {{ module.keywords | join(', ') }}</p>
+    </div>
+    {% else %}
+    {% if query %}
+        <p>По запросу **{{ query }}** модули не найдены.</p>
+    {% endif %}
+    {% endfor %}
+
+</body>
+</html>
