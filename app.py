@@ -16,7 +16,7 @@ try:
     cred_dict = json.loads(firebase_config_json)
     cred = credentials.Certificate(cred_dict)
 
-    database_url = os.environ.get("FIREBASE_DB_URL", "https://ВАША-БАЗА.firebaseio.com") 
+    database_url = os.environ.get("FIREBASE_DB_URL", "https://heroku-7f15d-default-rtdb.firebaseio.com") 
     
     firebase_admin.initialize_app(cred, {
         'databaseURL': database_url
