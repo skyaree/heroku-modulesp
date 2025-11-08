@@ -1,0 +1,20 @@
+[
+  {
+    "name": "heroku-buildpack-python",
+    "description": "Официальный Buildpack для развёртывания приложений на Python.",
+    "keywords": ["python", "app", "official", "web"],
+    "link": "https://github.com/heroku/heroku-buildpack-python"
+  },
+  {
+    "name": "heroku-buildpack-nginx",
+    "description": "Добавляет NGINX для обслуживания статических файлов или проксирования.",
+    "keywords": ["nginx", "static", "proxy", "performance"],
+    "link": "https://github.com/heroku/heroku-buildpack-nginx"
+  },
+  {
+    "name": "heroku-buildpack-pgbouncer",
+    "description": "Использует PgBouncer для эффективного управления пулом соединений PostgreSQL.",
+    "keywords": ["database", "postgres", "connection", "performance"],
+    "link": "https://github.com/heroku/heroku-buildpack-pgbouncer"
+  }
+]
