@@ -1,45 +1,83 @@
 import os
 import json
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, request, abort
 
 app = Flask(__name__)
 
+MODULES_STORE = [] 
+MODULES_STORE.extend([
+    {
+        "id": 1,
+        "name": "heroku-buildpack-python",
+        "description": "Официальный Buildpack для развёртывания приложений на Python.",
+        "keywords": ["python", "official"],
+        "link": "https://github.com/heroku/heroku-buildpack-python"
+    },
+    {
+        "id": 2,
+        "name": "heroku-buildpack-nginx",
+        "description": "Добавляет NGINX для обслуживания статических файлов.",
+        "keywords": ["nginx", "static", "proxy"],
+        "link": "https://github.com/heroku/heroku-buildpack-nginx"
+    }
+])
+next_id = 3
 
-try:
-    with open('modules.json', 'r', encoding='utf-8') as f:
-        MODULES = json.load(f)
-except FileNotFoundError:
-    MODULES = []
-    print("Ошибка: файл modules.json не найден.")
-
-
-def search_modules(query):
-    """Фильтрует модули по совпадению в названии, описании или ключевых словах."""
-    if not query:
-        return MODULES  
-
-    query_lower = query.lower()
-    results = []
-    for module in MODULES:
-        if (query_lower in module['name'].lower() or
-            query_lower in module['description'].lower() or
-            any(query_lower in k.lower() for k in module['keywords'])):
-            results.append(module)
-    return results
-
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    query = ""
-    results = []
+@app.route('/api/v1/modules', methods=['GET', 'POST'])
+def handle_modules():
+    global next_id
     
-    if request.method == 'POST':
-        query = request.form.get('query', '').strip()
-        results = search_modules(query)
-    else:
-        results = MODULES
-     
-    return render_template('index.html', modules=results, query=query)
+    if request.method == 'GET':
+        return jsonify({
+            "status": "success",
+            "count": len(MODULES_STORE),
+            "modules": MODULES_STORE
+        })
+    
+    elif request.method == 'POST':
+        if not request.json or 'name' not in request.json or 'link' not in request.json:
+            abort(400, description="Необходимо указать 'name' и 'link' в теле запроса.")
+
+        new_module = {
+            'id': next_id,
+            'name': request.json['name'],
+            'description': request.json.get('description', 'Описание отсутствует'),
+            'keywords': request.json.get('keywords', []),
+            'link': request.json['link']
+        }
+        
+        MODULES_STORE.append(new_module)
+        next_id += 1
+        
+        return jsonify({
+            "status": "created",
+            "module": new_module
+        }), 201
+
+@app.route('/api/v1/modules/search', methods=['GET'])
+def search_api():
+    query = request.args.get('query', '').strip().lower()
+    
+    if not query:
+        return jsonify({
+            "status": "error",
+            "message": "Параметр 'query' обязателен для поиска."
+        }), 400
+    
+    results = []
+    for module in MODULES_STORE:
+        if (query in module.get('name', '').lower() or
+            query in module.get('description', '').lower() or
+            any(query in k.lower() for k in module.get('keywords', []))):
+            results.append(module)
+            
+    return jsonify({
+        "status": "success",
+        "query": query,
+        "count": len(results),
+        "modules": results
+    })
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
