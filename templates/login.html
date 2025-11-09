@@ -2,24 +2,31 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Вход</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <header><a href="{{ url_for('index') }}">На главную</a></header>
+    <header>
+        <nav>
+            <a href="{{ url_for('modules_list') }}">🏠 Главная</a>
+            <!-- Вход/Выход здесь не отображаем, так как это сама страница входа -->
+        </nav>
+    </header>
+    
     <div class="container">
-        <h1>Войти</h1>
+        <h1>➡️ {{ title }}</h1>
+        
+        <p>Для входа используйте кнопку ниже.</p>
+        
         {% if error %}<p class="error">{{ error }}</p>{% endif %}
-        <form method="POST">
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
-            
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" required>
-            
-            <button type="submit">Войти</button>
-        </form>
-        <p>Тест: user@example.com/password123 или admin@example.com/password123</p>
+        
+        <!-- В реальном приложении здесь должен быть Firebase Google Sign-In -->
+        <a href="#" class="suggest-link" style="background-color: #e74c3c;">Google Sign-In (PLACEHOLDER)</a>
+
+        <p style="margin-top: 30px;">
+            <small>Примечание: Этот маршрут только отображает форму. Для реальной авторизации с токенами требуется Firebase SDK в браузере.</small>
+        </p>
     </div>
 </body>
 </html>
