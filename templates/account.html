@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мой Аккаунт</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'index.html' ignore missing %}
+    <div class="container">
+        <h1>Личный Кабинет</h1>
+        <p>Вы вошли как: **{{ user_email }}**</p>
+        <p>Здесь должна быть информация профиля.</p>
+        <a href="{{ url_for('logout') }}">Выйти</a>
+    </div>
+</body>
+</html>
