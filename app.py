@@ -193,9 +193,55 @@ def login_route():
                            logged_in=logged_in, 
                            is_admin=False)
 
+@app.route('/logout')
+def logout_route():
+    """Маршрут для выхода."""
+    session.pop('token', None)
+    return redirect(url_for('modules_list'))
 
 # --- CORE API ROUTES (JSON) ---
-# ... (Оставлены без изменений, так как они не затрагивают рендеринг HTML)
+
+@app.route('/api/v1/auth', methods=['POST'])
+def auth_api():
+    """API для приема токена Firebase ID от клиента, его верификации и установки сессии."""
+    data = request.get_json()
+    id_token = data.get('idToken')
+    
+    if not id_token:
+        return jsonify({"success": False, "message": "Токен не предоставлен."}), 400
+
+    if not db:
+        # Если Firebase не инициализирован, не можем проверить токен
+        return jsonify({"success": False, "message": "Сервис временно недоступен. (Firebase Auth не инициализирован)"}), 503
+
+    try:
+        # 1. Верификация токена
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+        
+        # 2. Установка сессии Flask (для поддержания состояния на сервере)
+        # Устанавливаем токен, а не UID, чтобы при каждом запросе
+        # проверить его актуальность и не хранить лишнее в сессии.
+        session['token'] = id_token 
+        
+        # 3. Регистрация/Обновление пользователя в Firestore (если нужно)
+        # Если пользователя нет, создаем его с ролью 'user'
+        user_doc = db.collection('Users').document(uid).get()
+        if not user_doc.exists:
+            db.collection('Users').document(uid).set({
+                'telegram_username': decoded_token.get('name', decoded_token.get('email', 'New User')),
+                'email': decoded_token.get('email', 'N/A'),
+                'role': 'user', # По умолчанию, если нет, то 'user'
+                'created_at': firestore.SERVER_TIMESTAMP
+            })
+        
+        return jsonify({"success": True, "message": "Успешный вход", "redirect": url_for('account_page')}), 200
+
+    except auth.InvalidIdTokenError:
+        return jsonify({"success": False, "message": "Недействительный токен."}), 401
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Ошибка верификации: {e}"}), 500
+
 
 @app.route('/api/v1/submit', methods=['POST'])
 @login_required
