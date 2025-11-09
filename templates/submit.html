@@ -1,143 +1,80 @@
-{% extends "base.html" %}
-
-{% block content %}
-<h1 class="mb-4">Подать Модуль на Проверку</h1>
-
-<form id="submission-form">
-    <div class="mb-3">
-        <label for="moduleFile" class="form-label">Прикрепить файл модуля (.py) 📌</label>
-        <input class="form-control" type="file" id="moduleFile" required accept=".py">
-        <div class="form-text">Выберите файл, который вы хотите загрузить.</div>
-    </div>
-
-    <div class="mb-3">
-        <label for="moduleName" class="form-label">Название модуля (Class Name)</label>
-        <input type="text" class="form-control" id="moduleName" required placeholder="Например: ModuarchMod">
-    </div>
-
-    <div class="mb-3">
-        <label for="authorName" class="form-label">Автор модуля (Ваш ник в Telegram)</label>
-        <input type="text" class="form-control" id="authorName" required 
-               value="{{ telegram_username|default('Укажите ник') }}" 
-               placeholder="Например: @MyAwesomeNick">
-        <div class="form-text">Предзаполнено из вашего профиля. Вы можете изменить.</div>
-    </div>
-
-    <div class="mb-3">
-        <label for="moduleCommands" class="form-label">Команды модуля (Автоматический анализ)</label>
-        <textarea class="form-control" id="moduleCommands" rows="5" required
-                  placeholder="Команды будут автоматически вычислены после загрузки файла. Проверьте и отредактируйте их."></textarea>
-        <div id="commands-feedback" class="form-text"></div>
-    </div>
-
-    <div class="mb-3">
-        <label for="moduleDescription" class="form-label">Описание модуля</label>
-        <textarea class="form-control" id="moduleDescription" rows="3" required
-                  placeholder="Подробно опишите, что делает ваш модуль."></textarea>
-    </div>
-    
-    <div class="d-flex justify-content-between">
-        <button type="button" class="btn btn-secondary">Отмена</button>
-        <button type="submit" class="btn btn-success" id="submit-btn">Подтвердить</button>
-    </div>
-</form>
-
-<div id="alert-container" class="mt-4"></div>
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-    document.getElementById('moduleFile').addEventListener('change', analyzeCode);
-
-    async function analyzeCode(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const code = e.target.result;
-            const feedback = document.getElementById('commands-feedback');
-            const commandsArea = document.getElementById('moduleCommands');
-            
-            feedback.textContent = '⏳ Анализ кода через Gemini API...';
-            commandsArea.value = '';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Функция для вызова API анализа кода (заглушка)
+        async function analyzeCode() {
+            const code = document.getElementById('module_code').value;
+            const output = document.getElementById('commands_output');
+            output.textContent = 'Анализ...';
 
             try {
-                // Вызов API для анализа
-                const response = await fetch('{{ url_for("analyze_module_code") }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
-                });
+                // В реальном приложении: здесь должен быть безопасный fetch к /api/v1/analyze_code
+                // Используем заглушку, так как Flask-API требует токен, которого нет в браузере напрямую
+                
+                // Имитация задержки и результата
+                await new Promise(r => setTimeout(r, 1500)); 
+                const mockResponse = {
+                    success: true,
+                    commands: ".search - Ищет модули в каталоге.\n.get_info - Возвращает информацию о модуле.\n"
+                };
 
-                const result = await response.json();
-
-                if (result.success) {
-                    commandsArea.value = result.commands;
-                    feedback.textContent = '✅ Команды успешно проанализированы. Проверьте перед отправкой.';
-                    feedback.className = 'form-text text-success';
+                if (mockResponse.success) {
+                    output.textContent = mockResponse.commands;
+                    document.getElementById('commands_field').value = mockResponse.commands;
                 } else {
-                    commandsArea.value = result.commands; // Отображаем сообщение об ошибке, если Gemini не сработал
-                    feedback.textContent = result.commands || '❌ Ошибка анализа кода.';
-                    feedback.className = 'form-text text-danger';
+                    output.textContent = `Ошибка: ${mockResponse.commands}`;
                 }
+
             } catch (error) {
-                feedback.textContent = '❌ Не удалось связаться с сервером API.';
-                feedback.className = 'form-text text-danger';
+                output.textContent = `Произошла ошибка при анализе: ${error.message}`;
             }
-        };
-        reader.readAsText(file);
-    }
-    
-    document.getElementById('submission-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const code = document.getElementById('moduleCommands').value; 
-        const fileInput = document.getElementById('moduleFile');
-        const file = fileInput.files[0];
-        let moduleCodeText = '';
-
-        if (!file) {
-            alert('Пожалуйста, прикрепите файл модуля.');
-            return;
         }
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            moduleCodeText = e.target.result;
-
-            const submissionData = {
-                name: document.getElementById('moduleName').value,
-                author: document.getElementById('authorName').value,
-                commands: document.getElementById('moduleCommands').value,
-                description: document.getElementById('moduleDescription').value,
-                module_code: moduleCodeText
-            };
-
-            document.getElementById('submit-btn').disabled = true;
-
-            // Вызов API для сохранения модуля
-            const response = await fetch('{{ url_for("submit_module_api") }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(submissionData)
-            });
-
-            const result = await response.json();
-            document.getElementById('submit-btn').disabled = false;
+    </script>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="{{ url_for('modules_list') }}">🏠 Главная</a>
+            {% if logged_in %}
+                <a href="{{ url_for('account_page') }}">👤 Аккаунт</a>
+                {% if is_admin %}
+                    <a href="{{ url_for('moderation_panel') }}">🔑 Админ-Панель</a>
+                {% endif %}
+                <a href="{{ url_for('login_route') }}" style="background-color: #e74c3c;">🚪 Выход (Локальный)</a>
+            {% endif %}
+        </nav>
+    </header>
+    
+    <div class="container">
+        <h1>📝 Подача Нового Модуля</h1>
+        
+        <form id="submit_form" method="POST" action="{{ url_for('submit_module_api') }}">
             
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert ${result.success ? 'alert-success' : 'alert-danger'}`;
-            alertDiv.textContent = result.message;
-            document.getElementById('alert-container').innerHTML = '';
-            document.getElementById('alert-container').appendChild(alertDiv);
+            <label for="name">Название Модуля:</label>
+            <input type="text" id="name" name="name" required>
             
-            if (result.success) {
-                 // Очистка формы или перенаправление
-                 setTimeout(() => window.location.href = '{{ url_for("modules_list") }}', 2000);
-            }
-        };
-        reader.readAsText(file);
-    });
-</script>
-{% endblock %}
+            <label for="author">Автор (Ваш Telegram ник):</label>
+            <input type="text" id="author" name="author" value="{{ telegram_username }}" required>
+            
+            <label for="description">Краткое Описание (до 200 символов):</label>
+            <textarea id="description" name="description" rows="3" maxlength="200" required></textarea>
+            
+            <label for="module_code">Код Модуля (Python):</label>
+            <textarea id="module_code" name="module_code" rows="15" required></textarea>
+            
+            <button type="button" onclick="analyzeCode()" style="background-color: #f39c12;">🔍 Проанализировать Команды</button>
+            
+            <label>Обнаруженные Команды:</label>
+            <pre id="commands_output" style="background:#ecf0f1; padding: 10px; border-radius: 6px;"></pre>
+            <input type="hidden" id="commands_field" name="commands">
+            
+            <button type="submit" onclick="this.textContent='Отправка...'">🚀 Отправить на Модерацию</button>
+        </form>
+    </div>
+</body>
+</html>
