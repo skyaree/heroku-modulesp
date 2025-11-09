@@ -1,57 +1,35 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <header>
-        <nav>
-            <a href="{{ url_for('modules_list') }}">🏠 Главная</a>
-            
-            {% if logged_in %}
-                <a href="{{ url_for('account_page') }}">👤 Аккаунт</a>
-                {% if is_admin %}
-                    <a href="{{ url_for('moderation_panel') }}">🔑 Админ-Панель</a>
-                {% endif %}
-                <a href="{{ url_for('login_route') }}" style="background-color: #e74c3c;">🚪 Выход (Локальный)</a>
-            {% else %}
-                <a href="{{ url_for('login_route') }}">➡️ Вход</a>
-            {% endif %}
-        </nav>
-    </header>
-    
-    <div class="container">
-        <h1>🔑 {{ title }}</h1>
-        
-        <p style="color: #e67e22; font-weight: bold;">
-            Вы вошли как Администратор. Здесь отображаются модули, ожидающие модерации.
-        </p>
-        
-        <section class="modules-list">
-            <h2>Модули на Модерации</h2>
-            
-            <!-- Здесь должна быть логика для отображения реальных модулей из Firestore -->
-            {% if pending_modules %}
-                {% for module in pending_modules %}
-                    <div class="module-card" style="border-left-color: #f39c12; margin-bottom: 15px;">
-                        <strong>{{ module.title }} (ID: {{ module.id }})</strong>
-                        <p>{{ module.description }}</p>
-                        <small>Автор: {{ module.author }}</small>
-                        <div style="margin-top: 10px; display: flex; gap: 10px;">
-                            <button style="background-color: var(--secondary-color); padding: 5px 10px;">Одобрить</button>
-                            <button style="background-color: #e74c3c; padding: 5px 10px;">Отклонить</button>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p>Нет модулей, ожидающих модерации.</p>
-            {% endif %}
-        </section>
-        
-    </div>
-</body>
-</html>
+{% extends "base.html" %}
 
+{% block content %}
+    <h1 style="text-align: left;">Hello, admin!...</h1>
+    <h2>Модерация модулей:</h2>
+    
+    <div class="admin-list">
+        {% for module in pending_modules %}
+        <div class="admin-row card" id="mod-{{ module.id }}">
+            <div onclick="alert('Раскрыть детали модуля {{ module.title }}')" style="cursor: pointer;">
+                <h3>{{ module.title }}</h3>
+                <p class="text-subtle">Автор: {{ module.author }}</p>
+                <p class="text-subtle">Описание: {{ module.description | truncate(100) }}</p>
+            </div>
+            
+            <div class="admin-row-banner">
+                </div>
+            
+            <div>
+                <button class="btn neon-btn" style="background-color: #4CAF50;">ПРИНЯТЬ</button>
+                <button class="btn neon-btn" style="background-color: #F44336;">ОТКЛОНИТЬ</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="pagination">
+        <a href="#"><span class="material-icons">chevron_left</span></a>
+        <a href="#" class="current-page">1</a>
+        <a href="#">2</a>
+        <span class="text-subtle">...</span>
+        <a href="#">56</a>
+        <a href="#"><span class="material-icons">chevron_right</span></a>
+    </div>
+{% endblock %}
