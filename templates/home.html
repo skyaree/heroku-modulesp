@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="text-align: center; padding: 50px;">
+    <h1 style="font-size: 4em; color: var(--color-cyan); text-shadow: var(--shadow-cyan);">heroku-modulesp</h1>
+    <h2 class="text-subtle">By @esqueeare</h2>
+    
+    <div class="flex-row" style="margin-top: 50px;">
+        <div style="text-align: left; max-width: 40%;">
+            <h2 style="border-bottom: none; margin-bottom: 20px;">Модули для Heroku!</h2>
+            <ul style="list-style-type: '⚡ '; font-size: 1.2em; line-height: 2;">
+                <li>Создавай</li>
+                <li>Оценивай</li>
+                <li>Выбирай</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: right; min-width: 40%;">
+            <a href="{{ url_for('modules_list') }}" class="btn neon-btn" style="width: 100%; margin-bottom: 20px;">
+                <span class="material-icons" style="vertical-align: middle;">menu_book</span> ВСЕ МОДУЛИ
+            </a>
+            {% if logged_in %}
+                <a href="{{ url_for('submit_module_form') }}" class="btn neon-btn btn-secondary" style="width: 100%; margin-bottom: 20px;">
+                    <span class="material-icons" style="vertical-align: middle;">publish</span> ВЫЛОЖИТЬ МОДУЛЬ
+                </a>
+            {% endif %}
+            <a href="{{ url_for('creators_list') }}" class="btn neon-btn btn-secondary" style="width: 100%;">
+                <span class="material-icons" style="vertical-align: middle;">group</span> СПИСОК СОЗДАТЕЛЕЙ
+            </a>
+        </div>
+    </div>
+    
+    <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+        <h3 class="text-subtle">Что такое Heroku?</h3>
+        <p class="text-subtle" style="font-style: italic;">Heroku это юзербот на telethon, форк хикки, сделан для телеграмма, он улучшает удовольствие от использования телеграмма, а также помогает людям.</p>
+    </div>
+</div>
+{% endblock %}
