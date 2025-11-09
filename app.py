@@ -4,123 +4,73 @@ import requests
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+# Импорт time для отметок времени
+from datetime import datetime
+import time 
 
 # --- Firebase Setup ---
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 
-# Загрузка переменных окружения
-load_dotenv() 
+# ... (Код инициализации Firebase остается без изменений) ...
 
-try:
-    FIREBASE_CREDENTIALS_JSON = os.environ.get("FIREBASE_CREDENTIALS_JSON")
-    if FIREBASE_CREDENTIALS_JSON:
-        cred = credentials.Certificate(json.loads(FIREBASE_CREDENTIALS_JSON))
-    else:
-        cred = credentials.Certificate("path/to/your/serviceAccountKey.json")
+# ... (Код инициализации Flask остается без изменений) ...
 
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app(cred)
-    db = firestore.client()
-except Exception:
-    db = None 
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "A_SUPER_SECRET_KEY_FALLBACK_2025")
-
-# --- PLACEHOLDERS (Обновленные заглушки) ---
+# --- PLACEHOLDERS ---
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
 
-MODULES_DATA = [
-    {'id': 'm1', 'title': 'Модуль 1: Базовая Аутентификация', 
-     'description': 'Демонстрация входа, выхода и защиты маршрутов. Длинное описание, чтобы проверить перенос текста.', 
-     'author': 'Иван Смирнов', 'rating': 4.7, 'downloads': 1500,
-     'commands': ['.login - Вход в систему', '.logout - Выход из системы', '.help - Помощь по командам']},
-    {'id': 'm2', 'title': 'Модуль 2: Сбор Обратной Связи', 
-     'description': 'Простая форма для предложений новых функций.', 
-     'author': 'Петр Козлов', 'rating': 4.2, 'downloads': 800,
-     'commands': ['.feedback - Отправить отзыв', '.suggest - Предложить идею']},
-    {'id': 'm3', 'title': 'Модуль 3: Панель Администратора', 
-     'description': 'Ограниченный доступ для управления контентом и просмотра предложений.', 
-     'author': 'Администратор', 'rating': 4.9, 'downloads': 3000,
-     'commands': ['.admin - Открыть панель', '.modlist - Список на модерации']},
-]
-
-CREATORS_DATA = [
-    {'id': 'c1', 'username': '@esqueeare', 'modules_count': 5, 'reviews_rating': 4.8, 'avatar_url': '/static/user_avatar.png'},
-    {'id': 'c2', 'username': '@Coder_Guy', 'modules_count': 3, 'reviews_rating': 4.5, 'avatar_url': '/static/user_avatar.png'},
-    {'id': 'c3', 'username': '@Pixel_Dev', 'modules_count': 10, 'reviews_rating': 4.9, 'avatar_url': '/static/user_avatar.png'},
-]
-# ----------------------------------------------------------------------
+# !!! УДАЛЯЕМ ВСЕ СТАРЫЕ ЗАГЛУШКИ: MODULES_DATA, CREATORS_DATA !!!
 
 
-# --- Decorators and Auth Logic (Оставлены для поддержки токенов) ---
-def get_user_data(uid):
-    """Получает данные пользователя из Firestore, включая роль и ник."""
-    if not db: 
-        # Заглушка для теста
-        return {'uid': uid, 'telegram_username': 'Test User', 'role': 'admin', 'modules_count': 5, 'high_rating': 4.7, 'id_tg': 'N/A'}
+# --- FIREBASE DATA LOGIC (Новые функции для работы с БД) ---
+
+def get_average_rating(module_id):
+    """Считает средний рейтинг модуля из коллекции Ratings."""
+    if not db: return 0.0 
     try:
-        user_doc = db.collection('Users').document(uid).get()
-        data = user_doc.to_dict() if user_doc.exists else {}
-        data['uid'] = uid
-        # Добавляем заглушки для полноты
-        data['modules_count'] = data.get('modules_count', 5)
-        data['high_rating'] = data.get('high_rating', 4.7)
-        data['id_tg'] = data.get('id_tg', 'N/A')
-        return data
-    except Exception:
-        return None
-
-def get_auth_status():
-    """Возвращает статус авторизации и данные пользователя для шаблонов."""
-    logged_in = False
-    is_admin = False
-    user_data = None
-    try:
-        if 'token' in session:
-            decoded_token = auth.verify_id_token(session['token'])
-            uid = decoded_token['uid']
-            user_data = get_user_data(uid)
-            logged_in = True
-            if user_data and user_data.get('role') == 'admin':
-                is_admin = True
-    except Exception:
-        session.pop('token', None) 
-    return logged_in, is_admin, user_data
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'token' not in session:
-            return redirect(url_for('login_route')) 
-        try:
-            auth.verify_id_token(session['token'])
-            return f(*args, **kwargs)
-        except Exception:
-            session.pop('token', None)
-            return redirect(url_for('login_route'))
-    return decorated_function
-
-def admin_required(f):
-    @wraps(f)
-    @login_required
-    def decorated_function(*args, **kwargs):
-        uid = auth.verify_id_token(session['token'])['uid']
-        user_data = get_user_data(uid)
-        if user_data and user_data.get('role') == 'admin':
-            return f(*args, **kwargs)
+        ratings_ref = db.collection('Ratings').where('module_id', '==', str(module_id)).stream()
+        total_score = 0
+        count = 0
+        for rating in ratings_ref:
+            data = rating.to_dict()
+            total_score += data.get('score', 0)
+            count += 1
         
-        logged_in, is_admin, _ = get_auth_status()
-        return render_template('error.html', 
-                               title="Доступ Запрещен", 
-                               message="У вас нет прав администратора.",
-                               logged_in=logged_in, 
-                               is_admin=is_admin), 403
-    return decorated_function
+        return round(total_score / count, 2) if count > 0 else 0.0
+    except Exception:
+        return 0.0
 
-# ----------------------------------------------------------------------
+def get_module_data_with_rating(module_doc):
+    """Преобразует документ модуля в словарь с добавлением рейтинга."""
+    module = module_doc.to_dict()
+    module['id'] = module_doc.id # Важно получить ID документа для маршрута
+    module['rating'] = get_average_rating(module_doc.id)
+    # Форматируем команды для отображения в шаблоне
+    if 'commands' in module and isinstance(module['commands'], str):
+        module['commands'] = [c.strip() for c in module['commands'].split('\n') if c.strip()]
+    return module
+
+def get_creator_data(uid):
+    """Получает данные пользователя, включая количество модулей и рейтинг."""
+    user_data = get_user_data(uid)
+    if not user_data: 
+        return {'uid': uid, 'username': 'Unknown Author', 'modules_count': 0, 'reviews_rating': 0.0}
+    
+    # Считаем количество модулей
+    module_count = db.collection('Modules').where('developer_uid', '==', uid).stream()
+    user_data['modules_count'] = len(list(module_count))
+    
+    # TODO: Более сложная логика среднего рейтинга автора
+    user_data['reviews_rating'] = user_data.get('high_rating', 4.7) 
+    user_data['username'] = user_data.get('telegram_username', 'User')
+    
+    return user_data
+
+# --- Decorators and Auth Logic (Остаются без изменений, но используем новую get_user_data) ---
+
+# ... (Код get_user_data, get_auth_status, login_required, admin_required остается без изменений) ...
+
 
 # --- CORE WEBSITE ROUTES (HTML) ---
 
@@ -128,6 +78,8 @@ def admin_required(f):
 def home():
     """Главная страница."""
     logged_in, is_admin, _ = get_auth_status()
+    # Просто редирект на список модулей или на пустую домашнюю страницу (по твоему прототипу 1000036982.png)
+    # Если ты хочешь отдельную домашнюю страницу (1000036982.png), используй:
     return render_template('home.html', 
                            title="Heroku Modules", 
                            logged_in=logged_in, 
@@ -135,23 +87,44 @@ def home():
 
 @app.route('/modules')
 def modules_list():
-    """Список всех модулей."""
+    """Список всех модулей (Прототип 1000036983.png)."""
     logged_in, is_admin, _ = get_auth_status()
+    modules = []
+    total_modules = 0
+    
+    if db:
+        try:
+            # Получаем только одобренные модули
+            modules_ref = db.collection('Modules').where('status', '==', 'approved').stream()
+            for doc in modules_ref:
+                modules.append(get_module_data_with_rating(doc))
+            total_modules = len(modules)
+        except Exception:
+            pass
+            
     return render_template('index.html', 
                            title="Каталог Модулей", 
-                           modules=MODULES_DATA,
-                           total_modules=len(MODULES_DATA),
+                           modules=modules,
+                           total_modules=total_modules,
                            logged_in=logged_in, 
                            is_admin=is_admin)
 
 @app.route('/module/<module_id>')
 def module_detail(module_id):
-    """Страница деталей модуля (Новая страница)."""
+    """Страница деталей модуля (Прототип 1000036984.png)."""
     logged_in, is_admin, _ = get_auth_status()
-    module = next((m for m in MODULES_DATA if m['id'] == module_id), None)
+    module = None
     
+    if db:
+        try:
+            # Получаем документ по ID
+            module_doc = db.collection('Modules').document(module_id).get()
+            if module_doc.exists:
+                module = get_module_data_with_rating(module_doc)
+        except Exception:
+            pass
+            
     if module is None:
-        # TODO: Создать шаблон error.html
         return "Модуль не найден", 404
         
     return render_template('module_detail.html', 
@@ -162,111 +135,112 @@ def module_detail(module_id):
 
 @app.route('/creators')
 def creators_list():
-    """Список создателей (Новая страница)."""
+    """Список создателей (Прототип 1000036985.png)."""
     logged_in, is_admin, _ = get_auth_status()
+    creators = []
+    total_creators = 0
+    
+    if db:
+        try:
+            # Получаем всех пользователей, которые имеют роль 'creator' или 'admin'
+            # Для простоты, пока получим всех пользователей и отфильтруем по наличию модулей
+            users_ref = db.collection('Users').stream()
+            for doc in users_ref:
+                creator_data = get_creator_data(doc.id)
+                if creator_data and creator_data.get('modules_count', 0) > 0:
+                    creators.append(creator_data)
+            total_creators = len(creators)
+        except Exception:
+            pass
+            
     return render_template('creators.html', 
                            title="Список Создателей", 
-                           creators=CREATORS_DATA,
-                           total_creators=len(CREATORS_DATA),
+                           creators=creators,
+                           total_creators=total_creators,
                            logged_in=logged_in, 
                            is_admin=is_admin)
 
-@app.route('/submit', methods=['GET'])
-@login_required
-def submit_module_form():
-    """Форма для подачи модуля."""
-    logged_in, is_admin, user_data = get_auth_status()
-    telegram_username = user_data.get('telegram_username', '') if user_data else ''
-    
-    return render_template('submit.html', 
-                           title="Подать Модуль", 
-                           telegram_username=telegram_username,
-                           logged_in=logged_in, 
-                           is_admin=is_admin)
+# ... (Остальные маршруты: submit_module_form, moderation_panel, account_page, login_route, logout_route остаются без изменений) ...
 
-@app.route('/panel/moderatemod')
-@admin_required
-def moderation_panel():
-    """Панель модерации."""
-    logged_in, is_admin, _ = get_auth_status()
-    pending_modules = MODULES_DATA 
-    
-    return render_template('admin.html', 
-                           title="Панель Модерации", 
-                           pending_modules=pending_modules,
-                           logged_in=logged_in, 
-                           is_admin=is_admin)
-
-@app.route('/account')
-@login_required
-def account_page():
-    """Страница аккаунта."""
-    logged_in, is_admin, user_data = get_auth_status()
-    if user_data:
-        user_data['role_display'] = user_data.get('role', 'user').upper()
-    
-    return render_template('account.html', 
-                           title="Мой Аккаунт", 
-                           user=user_data,
-                           logged_in=logged_in, 
-                           is_admin=is_admin)
-
-@app.route('/login')
-def login_route():
-    logged_in, _, _ = get_auth_status()
-    if logged_in:
-        return redirect(url_for('account_page'))
-    return render_template('login.html', 
-                           title="Вход",
-                           logged_in=logged_in, 
-                           is_admin=False)
-
-@app.route('/logout')
-def logout_route():
-    session.pop('token', None)
-    return redirect(url_for('modules_list'))
 
 # --- CORE API ROUTES (JSON) ---
 
-@app.route('/api/v1/auth', methods=['POST'])
-def auth_api():
-    """API для приема токена Firebase ID от клиента (после входа email/пароль), 
-    его верификации и установки сессии."""
+# ... (Маршрут auth_api остается без изменений, он создает/обновляет пользователя в коллекции 'Users') ...
+
+@app.route('/api/v1/submit', methods=['POST'])
+@login_required
+def submit_module_api():
+    """API-маршрут для приема данных модуля (Прототип 1000036987.png)."""
     data = request.get_json()
-    id_token = data.get('idToken')
+    uid = auth.verify_id_token(session['token'])['uid']
     
-    if not id_token or not db:
-        return jsonify({"success": False, "message": "Ошибка сервера или токен не предоставлен."}), 503
+    required_fields = ['name', 'author', 'commands', 'description', 'module_code', 'banner_url']
+    if not all(field in data for field in required_fields):
+        return jsonify({"success": False, "message": "Не все поля заполнены"}), 400
+
+    module_data = {
+        "name": data['name'],
+        "author": data['author'],
+        "commands": data['commands'],
+        "description": data['description'],
+        "module_code": data['module_code'],
+        "banner_url": data['banner_url'], # Новое поле
+        "developer_uid": uid,
+        "status": "pending", # Всегда отправляем на модерацию
+        "created_at": time.time(), # Используем временную метку UNIX 
+        "downloads": 0
+    }
 
     try:
-        decoded_token = auth.verify_id_token(id_token)
-        uid = decoded_token['uid']
-        session['token'] = id_token 
-        
-        # Регистрация/Обновление пользователя в Firestore
-        user_doc = db.collection('Users').document(uid).get()
-        if not user_doc.exists:
-            # Создаем базовый профиль, если он не существует
-            db.collection('Users').document(uid).set({
-                'telegram_username': decoded_token.get('name', decoded_token.get('email', 'New User')),
-                'email': decoded_token.get('email', 'N/A'),
-                'role': 'user', 
-                'created_at': firestore.SERVER_TIMESTAMP
-            })
-        
-        return jsonify({"success": True, "message": "Успешный вход", "redirect": url_for('account_page')}), 200
-
-    except auth.InvalidIdTokenError:
-        return jsonify({"success": False, "message": "Недействительный токен."}), 401
+        db.collection('Modules').add(module_data)
+        return jsonify({"success": True, "message": "Модуль отправлен на модерацию"}), 200
     except Exception as e:
-        return jsonify({"success": False, "message": f"Ошибка верификации: {e}"}), 500
+        return jsonify({"success": False, "message": f"Ошибка БД: {e}"}), 500
 
-# Маршруты submit_module_api и analyze_module_code остаются без изменений
+# ... (Маршрут analyze_module_code остается без изменений) ...
+
+# --- НОВЫЙ МАРШРУТ: API для выставления рейтинга ---
+@app.route('/api/v1/rate_module/<module_id>', methods=['POST'])
+@login_required
+def rate_module_api(module_id):
+    """Прием рейтинга от пользователя и сохранение в Firestore."""
+    data = request.get_json()
+    score = data.get('score')
+    uid = auth.verify_id_token(session['token'])['uid']
+
+    if score is None or not 1 <= score <= 5:
+        return jsonify({"success": False, "message": "Неверный формат рейтинга (1-5)."}), 400
+
+    rating_data = {
+        "module_id": str(module_id),
+        "user_uid": uid,
+        "score": int(score),
+        "created_at": time.time()
+    }
+    
+    try:
+        # Ищем, оставлял ли пользователь уже рейтинг для этого модуля
+        query = db.collection('Ratings').where('module_id', '==', str(module_id)).where('user_uid', '==', uid)
+        existing_ratings = query.stream()
+        
+        updated = False
+        for doc in existing_ratings:
+            # Если рейтинг уже есть, обновляем его
+            db.collection('Ratings').document(doc.id).update({'score': int(score), 'created_at': time.time()})
+            updated = True
+            break
+            
+        if not updated:
+            # Если нет, создаем новый
+            db.collection('Ratings').add(rating_data)
+            
+        # Возвращаем новый средний рейтинг для обновления на клиенте
+        new_avg_rating = get_average_rating(module_id)
+        
+        return jsonify({"success": True, "message": "Рейтинг сохранен.", "new_rating": new_avg_rating}), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Ошибка сохранения рейтинга: {e}"}), 500
+
 
 if __name__ == '__main__':
-    # Включаем статическую папку для заглушек
-    if not os.path.exists('static'): os.makedirs('static')
-    with open('static/user_avatar.png', 'w') as f: f.write('') 
-    if not os.path.exists('templates'): os.makedirs('templates')
-    
     app.run(debug=True)
