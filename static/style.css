@@ -97,7 +97,7 @@ textarea {
     padding: 12px;
     border: 1px solid #bdc3c7;
     border-radius: 6px;
-    box-sizing: border-box; /* Important for width calculation */
+    box-sizing: border-box; 
     transition: border-color 0.2s;
 }
 
@@ -188,19 +188,6 @@ button[type="submit"]:hover, .suggest-link:hover {
     justify-content: space-between;
     align-items: center;
     margin-top: 30px;
-}
-
-/* ----------------------------------------------------------------
-   5. ADMIN & ACCOUNT (Аккаунт и Админ)
----------------------------------------------------------------- */
-.admin-info {
-    border-left: 5px solid #e67e22; /* Orange for Admin */
-    padding-left: 20px;
-}
-
-.admin-info ul {
-    list-style-type: disc;
-    padding-left: 20px;
 }
 
 /* Responsive adjustments */
