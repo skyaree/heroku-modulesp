@@ -1,222 +1,227 @@
-/* ================================================= */
-/* NEON & FUTURISTIC STYLE V1.0             */
-/* ================================================= */
+/* --- ГЛОБАЛЬНЫЙ CSS ДЛЯ СТИЛЯ KRNL.CAT --- */
 
-/* --- Цветовая Палитра (CSS Variables) --- */
+/* --- ПЕРЕМЕННЫЕ (Цветовая Схема) --- */
 :root {
-    --color-black: #05050a; /* Очень темный фон */
-    --color-violet: #a343f8; /* Основной неоновый фиолетовый */
-    --color-blue: #43baf8; /* Основной неоновый синий */
-    --color-cyan: #43f8f8; /* Акцентный неоновый голубой */
-    --color-light-bg: rgba(255, 255, 255, 0.05); /* Полупрозрачный фон элементов */
-    --color-dark-bg: rgba(0, 0, 0, 0.4); /* Темный полупрозрачный фон */
-    --color-text: #ffffff;
+    --color-background-dark: #000000;      /* Глубокий черный фон */
+    --color-card-dark: #121212;            /* Очень темный фон карточек */
+    --color-text-light: #E0E0E0;           /* Светлый текст */
+    --color-accent-main: #00FFFF;          /* Яркий Циан (Электрический Неон) */
+    --color-accent-shadow: rgba(0, 255, 255, 0.4); /* Тень для неона */
+    --color-button-hover: #00BFFF;         /* Более глубокий синий при наведении */
+    --color-red: #FF4444;                  /* Красный для ошибок/предупреждений */
+    --color-green: #00FF00;                /* Зеленый для успеха */
+    --color-subtle: #888888;               /* Серый для подзаголовков/подсказок */
     
-    /* Тень для неонового эффекта */
-    --shadow-violet: 0 0 5px var(--color-violet), 0 0 10px var(--color-violet), 0 0 20px rgba(163, 67, 248, 0.5);
-    --shadow-blue: 0 0 5px var(--color-blue), 0 0 10px var(--color-blue), 0 0 20px rgba(67, 186, 248, 0.5);
-    
-    /* Плавные переходы */
-    --transition-speed: 0.3s;
+    /* Моноширинный шрифт для "хакерского" стиля */
+    --font-primary: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
-/* --- Базовые Стили и Фон --- */
+/* --- ОБЩИЕ СТИЛИ --- */
 * {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Arial', sans-serif; /* Можно заменить на более футуристический шрифт */
-    color: var(--color-text);
-    transition: all var(--transition-speed) ease; /* Плавные переходы для всех элементов */
+    font-family: var(--font-primary); 
+    transition: all 0.3s ease; 
 }
 
 body {
-    background-color: var(--color-black);
-    background-image: 
-        radial-gradient(circle at 10% 20%, rgba(67, 186, 248, 0.1) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(163, 67, 248, 0.15) 0%, transparent 40%);
-    min-height: 100vh;
-    padding-top: 80px; /* Отступ от шапки */
+    background-color: var(--color-background-dark);
+    color: var(--color-text-light);
+    margin: 0;
+    padding-top: 60px; /* Отступ для фиксированного навбара */
+    line-height: 1.6;
 }
 
 a {
+    color: var(--color-accent-main);
     text-decoration: none;
-    color: var(--color-cyan);
 }
 
 a:hover {
-    text-shadow: 0 0 5px var(--color-cyan);
+    color: var(--color-button-hover);
+    text-decoration: underline;
 }
 
-/* --- Шапка Навигации (Header) --- */
-header {
+h1, h2, h3 {
+    color: var(--color-text-light);
+    border-left: 4px solid var(--color-accent-main);
+    padding-left: 10px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 3px var(--color-accent-shadow);
+}
+h1 { font-size: 2em; }
+h2 { font-size: 1.5em; }
+
+.text-subtle {
+    color: var(--color-subtle);
+    font-size: 0.9em;
+}
+
+/* --- КОНТЕЙНЕР --- */
+.container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+/* --- НАВИГАЦИОННАЯ ПАНЕЛЬ (NAVBAR) --- */
+.navbar {
+    background-color: var(--color-card-dark);
+    border-bottom: 2px solid var(--color-accent-main); 
+    box-shadow: 0 0 15px var(--color-accent-shadow); 
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 70px;
+    z-index: 1000;
+}
+
+.navbar-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 40px;
-    
-    /* Эффект полупрозрачного стекла */
-    background-color: rgba(5, 5, 10, 0.8); 
-    backdrop-filter: blur(10px); 
-    z-index: 1000;
-    border-bottom: 2px solid var(--color-violet); /* Неоновая граница */
-    box-shadow: var(--shadow-violet);
 }
 
-.logo a {
-    font-size: 2em;
-    font-weight: bold;
-    color: var(--color-cyan);
-    text-shadow: var(--shadow-blue);
-    letter-spacing: 2px;
-}
-
-nav a {
-    margin-left: 20px;
-    font-weight: bold;
-    color: var(--color-text);
-    padding: 5px 10px;
-    border-radius: 5px;
-    position: relative;
-    overflow: hidden;
-}
-
-nav a:before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 3px;
-    background: var(--color-violet);
-    box-shadow: var(--shadow-violet);
-    transform: translateX(-50%);
-    transition: width var(--transition-speed) ease;
-}
-
-nav a:hover:before {
-    width: 100%;
-}
-
-.profile-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--color-blue);
-    box-shadow: var(--shadow-blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.logo {
     font-size: 1.5em;
-    cursor: pointer;
-}
-.profile-icon:hover {
-    transform: scale(1.1);
-}
-
-/* --- Основной Контейнер --- */
-.container {
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 0 20px;
+    font-weight: bold;
+    color: var(--color-accent-main);
+    text-shadow: 0 0 10px var(--color-accent-shadow);
 }
 
-/* --- Карточки (Общий Стиль для Модулей/Авторов/Панелей) --- */
-.card, .form-container, .module-item, .creator-item, .admin-row {
-    background-color: var(--color-light-bg);
-    border: 1px solid rgba(163, 67, 248, 0.4);
-    backdrop-filter: blur(8px); /* Размытие заднего фона */
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 25px;
-    box-shadow: 0 0 10px rgba(163, 67, 248, 0.1);
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
-}
-
-.module-item:hover, .creator-item:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-violet);
-    border-color: var(--color-violet);
-    cursor: pointer;
-}
-
-/* --- Заголовки --- */
-h1 {
-    font-size: 3em;
-    color: var(--color-violet);
-    text-shadow: var(--shadow-violet);
-    margin-bottom: 20px;
-    text-align: center;
-}
-h2 {
-    color: var(--color-blue);
-    text-shadow: var(--shadow-blue);
-    border-bottom: 1px solid rgba(67, 186, 248, 0.3);
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-}
-
-/* --- Кнопки (Neon Button) --- */
-.btn, .neon-btn {
-    display: inline-block;
-    padding: 10px 20px;
-    margin: 5px;
-    border: none;
-    border-radius: 8px;
+.nav-links a {
+    margin-left: 20px;
+    font-size: 1.1em;
     font-weight: bold;
     text-transform: uppercase;
-    cursor: pointer;
-    background-color: var(--color-violet);
-    color: var(--color-text);
-    box-shadow: var(--shadow-violet);
-    position: relative;
-    overflow: hidden;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    text-shadow: 0 0 5px var(--color-accent-shadow); 
+    padding: 5px 0;
 }
 
-.btn:hover, .neon-btn:hover {
-    background-color: var(--color-blue);
-    box-shadow: var(--shadow-blue);
-    transform: scale(1.05);
+.nav-links a:hover {
+    color: var(--color-button-hover);
+    text-shadow: 0 0 10px var(--color-accent-main);
+}
+
+/* --- КАРТОЧКИ (CARDS) --- */
+.card {
+    background-color: var(--color-card-dark);
+    padding: 25px;
+    border-radius: 0; /* Строгий вид */
+    border: 1px solid var(--color-accent-main);
+    box-shadow: 0 0 8px var(--color-accent-shadow);
+}
+
+/* --- КНОПКИ (BUTTONS) --- */
+.btn {
+    padding: 10px 20px;
+    border: 2px solid var(--color-accent-main);
+    background-color: transparent;
+    color: var(--color-accent-main);
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: bold;
+    border-radius: 0; 
+    box-shadow: 0 0 5px var(--color-accent-shadow);
+    transition: background-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+.btn:hover {
+    background-color: var(--color-accent-main);
+    color: var(--color-background-dark); 
+    box-shadow: 0 0 15px var(--color-accent-main);
 }
 
 .btn-secondary {
-    background-color: transparent;
-    border: 2px solid var(--color-cyan);
-    box-shadow: var(--shadow-cyan);
-    color: var(--color-cyan);
+    border-color: var(--color-subtle);
+    color: var(--color-subtle);
+    box-shadow: none;
 }
+
 .btn-secondary:hover {
-    background-color: rgba(67, 248, 248, 0.1);
-    box-shadow: var(--shadow-cyan), 0 0 15px var(--color-cyan);
+    border-color: var(--color-accent-main);
+    color: var(--color-accent-main);
+    background-color: rgba(0, 255, 255, 0.1);
 }
 
-
-/* --- Поля Формы (Inputs) --- */
-input[type="text"], input[type="email"], input[type="password"], textarea, select, .input-group label {
+/* --- ВВОДНЫЕ ПОЛЯ (INPUTS) --- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid var(--color-blue);
-    border-radius: 6px;
-    background-color: var(--color-dark-bg);
-    color: var(--color-text);
+    background-color: var(--color-background-dark);
+    border: 1px solid var(--color-accent-main);
+    color: var(--color-text-light);
+    border-radius: 0;
     font-size: 1em;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 input:focus, textarea:focus {
     outline: none;
-    border-color: var(--color-violet);
-    box-shadow: 0 0 8px rgba(163, 67, 248, 0.7);
+    border-color: var(--color-button-hover);
+    box-shadow: 0 0 5px var(--color-accent-shadow);
 }
 
-/* --- Вспомогательные Классы --- */
+/* --- СТРАНИЦА: LOGIN / ACCOUNT --- */
+.login-box, .account-box {
+    max-width: 400px;
+    margin: 80px auto;
+    text-align: center;
+}
+
+/* --- СТРАНИЦА: MODULES LIST (index.html) --- */
+.module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.module-item {
+    padding: 20px;
+    border: 2px solid var(--color-accent-main);
+    box-shadow: 0 0 12px var(--color-accent-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.module-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px var(--color-accent-main);
+    background-color: #1a1a1a;
+}
+
+/* --- СТРАНИЦА: MODULE DETAIL (module_detail.html) --- */
+.module-detail-banner {
+    border: 1px solid var(--color-accent-main);
+    box-shadow: 0 0 10px var(--color-accent-shadow);
+}
+.module-detail {
+    max-width: 900px;
+    margin: 30px auto;
+}
+.module-detail ul {
+    list-style: none; 
+    padding-left: 0;
+}
+.module-detail ul li {
+    margin-bottom: 10px; 
+    border-left: 3px solid var(--color-accent-main); 
+    padding-left: 10px;
+}
+
+/* Звезды рейтинга */
+.stars {
+    color: gold; 
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+}
+
+
+/* --- СТРАНИЦА: CREATORS (creators.html) --- */
 .flex-row {
     display: flex;
     justify-content: space-between;
@@ -224,160 +229,81 @@ input:focus, textarea:focus {
     margin-bottom: 20px;
 }
 
-.text-subtle {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-/* --- Пагинация (Прототипы 1000036983.png, 1000036985.png, 1000036989.png) --- */
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 30px;
-}
-.pagination a {
-    margin: 0 5px;
-    padding: 8px 15px;
-    border: 2px solid var(--color-violet);
-    border-radius: 6px;
-    font-weight: bold;
-    text-shadow: none;
-    transition: background-color 0.3s, transform 0.2s;
-}
-.pagination a:hover {
-    background-color: rgba(163, 67, 248, 0.2);
-    box-shadow: var(--shadow-violet);
-    transform: translateY(-2px);
-}
-.pagination .current-page {
-    background-color: var(--color-violet);
-    box-shadow: var(--shadow-violet);
-}
-
-/* --- Стилизация Списков Модулей (index.html) --- */
-
-.module-item {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-}
-.module-item-content {
-    flex-grow: 1;
-}
-.module-item-content h3 {
-    font-size: 1.5em;
-    margin-bottom: 5px;
-    color: var(--color-cyan);
-}
-.module-item-rating {
-    display: flex;
-    align-items: center;
-    font-weight: bold;
-    color: var(--color-cyan);
-}
-.module-item-rating .stars {
-    color: gold; 
-    text-shadow: 0 0 5px gold;
-    margin-right: 5px;
-}
-.module-item-banner {
-    width: 150px;
-    height: 90px;
-    background: linear-gradient(45deg, var(--color-violet), var(--color-blue));
-    border-radius: 8px;
-    border: 2px solid var(--color-cyan);
-}
-
-/* --- Стилизация Страницы Аккаунта (account.html) --- */
-.account-grid {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 40px;
-    align-items: flex-start;
-}
-.account-info {
-    padding: 30px;
-}
-.account-avatar {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    border: 4px solid var(--color-violet);
-    box-shadow: var(--shadow-violet);
-    margin-bottom: 20px;
-}
-.account-data p {
-    margin-bottom: 10px;
-    font-size: 1.1em;
-}
-.account-data strong {
-    color: var(--color-cyan);
-    text-shadow: 0 0 2px var(--color-cyan);
-}
-.account-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-/* --- Стилизация Панели Модерации (admin.html) --- */
-.admin-row {
-    display: grid;
-    grid-template-columns: 3fr 1fr 1fr;
-    gap: 20px;
-    align-items: center;
-}
-.admin-row-banner {
-    width: 100px;
-    height: 60px;
-    background: linear-gradient(135deg, red, yellow); /* Красный/желтый для "на модерации" */
-    border-radius: 6px;
-}
-
-/* --- Стилизация Страницы Входа (login.html) --- */
-.login-box {
-    width: 400px;
-    margin: 150px auto;
-    padding: 40px;
-    text-align: center;
-    border: 2px solid var(--color-blue);
-    box-shadow: var(--shadow-blue);
-    background-color: var(--color-light-bg);
-    backdrop-filter: blur(12px);
-    border-radius: 15px;
-}
-
-/* --- Стилизация Формы Подачи Модуля (submit.html) --- */
-.submit-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-.form-step {
-    padding: 15px;
-    background-color: rgba(5, 5, 10, 0.4);
-    border-left: 5px solid var(--color-cyan);
-    border-radius: 8px;
-}
-
-/* --- Стилизация Страницы Создателей (creators.html) --- */
 .creators-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
 }
+
 .creator-item {
     text-align: center;
 }
+
 .creator-avatar {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
-    margin: 0 auto 10px;
-    border: 3px solid var(--color-violet);
-    box-shadow: var(--shadow-violet);
+    margin: 0 auto 15px auto;
+    border: 3px solid var(--color-accent-main);
+    box-shadow: 0 0 10px var(--color-accent-shadow);
+    background-size: cover;
+    background-position: center;
 }
-.creator-item h3 {
-    margin-bottom: 5px;
-    color: var(--color-cyan);
+
+/* Пагинация */
+.pagination {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 1.1em;
+}
+
+.pagination a, .pagination span {
+    padding: 5px 10px;
+    margin: 0 5px;
+    border: 1px solid var(--color-subtle);
+}
+
+.pagination a:hover {
+    border-color: var(--color-accent-main);
+    color: var(--color-accent-main);
+}
+
+.pagination .current-page {
+    border-color: var(--color-accent-main);
+    color: var(--color-accent-main);
+    background-color: rgba(0, 255, 255, 0.1);
+    font-weight: bold;
+}
+
+/* --- СТРАНИЦА: SUBMIT / ADMIN PANEL --- */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.code-textarea {
+    min-height: 250px;
+    resize: vertical;
+    font-size: 0.9em;
+}
+
+/* Стили для панели модерации */
+.moderation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px dashed var(--color-subtle);
+    padding-bottom: 15px;
+}
+
+.moderation-item:last-child {
+    border-bottom: none;
+}
+
+.mod-info {
+    flex-grow: 1;
+}
+
+.mod-actions .btn {
+    margin-left: 10px;
 }
