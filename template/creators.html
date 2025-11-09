@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 style="text-align: left;">Список создателей <span class="text-subtle">({{ total_creators }} созд.)</span></h1>
+    
+    <div class="flex-row">
+        <div class="creator-controls">
+            <button class="btn neon-btn btn-secondary">ПО КОЛ-ВО МОДУЛЕЙ</button>
+            <button class="btn neon-btn btn-secondary">ПО РЕЙТИНГУ</button>
+            <button class="btn neon-btn btn-secondary">ПО АЛФАВИТУ</button>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" placeholder="Q | ПОИСК" style="width: 300px; margin-bottom: 0;">
+        </div>
+    </div>
+    
+    <div class="creators-grid">
+        {% for creator in creators %}
+        <div class="creator-item card">
+            <div class="creator-avatar" style="background-image: url({{ creator.avatar_url }}); background-size: cover; background-color: var(--color-blue);">
+                </div>
+            
+            <h3>{{ creator.username }}</h3>
+            <div style="margin-top: 10px;">
+                <p class="text-subtle">Кол-во модулей: <strong>{{ creator.modules_count }}</strong></p>
+                <p class="text-subtle">Рейтинг: <strong>{{ creator.reviews_rating }}</strong> <span class="stars">★★★★☆</span></p>
+            </div>
+            
+            <button class="btn neon-btn btn-secondary" style="margin-top: 15px;" onclick="alert('TODO: Перейти к модулям {{ creator.username }}')">
+                ПОСМОТРЕТЬ МОДУЛИ
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="pagination">
+        <a href="#"><span class="material-icons">chevron_left</span></a>
+        <a href="#" class="current-page">1</a>
+        <a href="#">2</a>
+        <span class="text-subtle">...</span>
+        <a href="#">14</a>
+        <a href="#"><span class="material-icons">chevron_right</span></a>
+    </div>
+{% endblock %}
