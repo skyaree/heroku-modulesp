@@ -3,11 +3,19 @@
 {% block content %}
     <div class="login-box">
         <h1>ВХОД / РЕГИСТРАЦИЯ</h1>
-        <p class="text-subtle">Используйте Google для безопасного входа.</p>
+        <p class="text-subtle">Используйте ваш Email и Пароль.</p>
         
-        <button id="signInButton" class="btn neon-btn" style="background-color: #DB4437; box-shadow: 0 0 10px #DB4437; margin-top: 20px;">
-            <span class="material-icons" style="vertical-align: middle;">login</span> ВОЙТИ ЧЕРЕЗ GOOGLE
-        </button>
+        <form id="loginForm" style="margin-top: 20px;">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Пароль" required>
+            
+            <button type="submit" class="btn neon-btn" style="background-color: var(--color-violet); margin-top: 10px;">
+                <span class="material-icons" style="vertical-align: middle;">login</span> ВОЙТИ
+            </button>
+            <button type="button" id="registerButton" class="btn neon-btn btn-secondary" style="margin-top: 10px;">
+                <span class="material-icons" style="vertical-align: middle;">person_add</span> РЕГИСТРАЦИЯ
+            </button>
+        </form>
         
         <p id="authMessage" style="margin-top: 20px; color: var(--color-cyan);"></p>
     </div>
@@ -23,9 +31,7 @@
         apiKey: "YOUR_API_KEY",
         authDomain: "YOUR_AUTH_DOMAIN",
         projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        // ... остальные ключи
     };
 
     // 3. Инициализация Firebase
@@ -33,36 +39,60 @@
         firebase.initializeApp(firebaseConfig);
     }
     const auth = firebase.auth();
-    const googleProvider = new firebase.auth.GoogleAuthProvider();
     const messageElement = document.getElementById('authMessage');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
 
-    // 4. Логика входа
-    document.getElementById('signInButton').addEventListener('click', () => {
-        messageElement.textContent = 'Ожидание авторизации...';
-        
-        auth.signInWithPopup(googleProvider)
-            .then((result) => {
-                // Получение ID-токена
-                return result.user.getIdToken();
-            })
-            .then((idToken) => {
-                // Отправка токена на Flask API для установки сессии
-                return fetch('{{ url_for("auth_api") }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken: idToken })
-                });
+    // Общая функция для отправки токена на сервер
+    function sendTokenToServer(user) {
+        user.getIdToken().then(idToken => {
+            fetch('{{ url_for("auth_api") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: idToken })
             })
             .then(response => response.json())
             .then(data => {
                 messageElement.textContent = data.message;
                 if (data.success && data.redirect) {
-                    window.location.href = data.redirect; // Перенаправление на страницу аккаунта
+                    window.location.href = data.redirect;
                 }
+            })
+            .catch(error => {
+                messageElement.textContent = `Ошибка сервера: ${error.message}`;
+            });
+        });
+    }
+
+    // 4. Логика входа
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        messageElement.textContent = 'Выполняется вход...';
+        
+        auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
+            .then((userCredential) => {
+                // Успешный вход
+                sendTokenToServer(userCredential.user);
             })
             .catch((error) => {
                 messageElement.textContent = `Ошибка входа: ${error.message}`;
             });
     });
+
+    // 5. Логика регистрации
+    document.getElementById('registerButton').addEventListener('click', () => {
+        messageElement.textContent = 'Выполняется регистрация...';
+        
+        auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
+            .then((userCredential) => {
+                // Успешная регистрация
+                messageElement.textContent = 'Регистрация успешна! Входим...';
+                sendTokenToServer(userCredential.user);
+            })
+            .catch((error) => {
+                messageElement.textContent = `Ошибка регистрации: ${error.message}`;
+            });
+    });
+
 </script>
 {% endblock %}
