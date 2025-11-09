@@ -5,6 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // --- ФУНКЦИИ-ЗАГЛУШКИ ДЛЯ АУТЕНТИФИКАЦИИ ---
+        function generateMockToken() {
+            // В реальной жизни это делает Firebase SDK после успешного входа через Google.
+            // Здесь мы используем простой, но уникальный ID в качестве "токена".
+            return 'mock_firebase_id_token_' + new Date().getTime();
+        }
+
+        async function handleGoogleSignIn() {
+            const loginButton = document.getElementById('google-login-button');
+            const errorMessage = document.getElementById('error-message');
+            loginButton.textContent = 'Обработка...';
+            errorMessage.style.display = 'none';
+
+            // 1. Имитация получения токена (в реале это Firebase SDK)
+            const idToken = generateMockToken();
+
+            // 2. Отправка токена на серверный API для верификации и установки сессии
+            try {
+                const response = await fetch("{{ url_for('auth_api') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken: idToken })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Успех: перенаправляем на страницу аккаунта
+                    window.location.href = result.redirect;
+                } else {
+                    // Ошибка: показываем сообщение
+                    errorMessage.textContent = 'Ошибка входа: ' + result.message;
+                    errorMessage.style.display = 'block';
+                    loginButton.textContent = 'Google Sign-In';
+                }
+
+            } catch (error) {
+                errorMessage.textContent = 'Ошибка сети или сервера: ' + error.message;
+                errorMessage.style.display = 'block';
+                loginButton.textContent = 'Google Sign-In';
+            }
+        }
+    </script>
 </head>
 <body>
     <header>
@@ -17,15 +63,23 @@
     <div class="container">
         <h1>➡️ {{ title }}</h1>
         
-        <p>Для входа используйте кнопку ниже.</p>
+        <p>Для входа используйте кнопку ниже. (В реальном приложении это активирует Firebase Google Sign-In)</p>
         
-        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <p id="error-message" class="error" style="display:none;"></p>
         
-        <!-- В реальном приложении здесь должен быть Firebase Google Sign-In -->
-        <a href="#" class="suggest-link" style="background-color: #e74c3c;">Google Sign-In (PLACEHOLDER)</a>
+        <!-- Кнопка теперь вызывает JS-функцию handleGoogleSignIn -->
+        <button 
+            type="button" 
+            id="google-login-button"
+            onclick="handleGoogleSignIn()" 
+            class="suggest-link" 
+            style="background-color: #e74c3c; width: 100%;"
+        >
+            Google Sign-In
+        </button>
 
         <p style="margin-top: 30px;">
-            <small>Примечание: Этот маршрут только отображает форму. Для реальной авторизации с токенами требуется Firebase SDK в браузере.</small>
+            <small>Примечание: Фактическая верификация токена и создание сессии происходит на сервере Flask/Firebase Admin SDK. Здесь используется *заглушка токена*.</small>
         </p>
     </div>
 </body>
