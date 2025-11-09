@@ -1,80 +1,109 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script>
-        // Функция для вызова API анализа кода (заглушка)
-        async function analyzeCode() {
-            const code = document.getElementById('module_code').value;
-            const output = document.getElementById('commands_output');
-            output.textContent = 'Анализ...';
+{% extends "base.html" %}
 
-            try {
-                // В реальном приложении: здесь должен быть безопасный fetch к /api/v1/analyze_code
-                // Используем заглушку, так как Flask-API требует токен, которого нет в браузере напрямую
-                
-                // Имитация задержки и результата
-                await new Promise(r => setTimeout(r, 1500)); 
-                const mockResponse = {
-                    success: true,
-                    commands: ".search - Ищет модули в каталоге.\n.get_info - Возвращает информацию о модуле.\n"
-                };
-
-                if (mockResponse.success) {
-                    output.textContent = mockResponse.commands;
-                    document.getElementById('commands_field').value = mockResponse.commands;
-                } else {
-                    output.textContent = `Ошибка: ${mockResponse.commands}`;
-                }
-
-            } catch (error) {
-                output.textContent = `Произошла ошибка при анализе: ${error.message}`;
-            }
-        }
-    </script>
-</head>
-<body>
-    <header>
-        <nav>
-            <a href="{{ url_for('modules_list') }}">🏠 Главная</a>
-            {% if logged_in %}
-                <a href="{{ url_for('account_page') }}">👤 Аккаунт</a>
-                {% if is_admin %}
-                    <a href="{{ url_for('moderation_panel') }}">🔑 Админ-Панель</a>
-                {% endif %}
-                <a href="{{ url_for('login_route') }}" style="background-color: #e74c3c;">🚪 Выход (Локальный)</a>
-            {% endif %}
-        </nav>
-    </header>
+{% block content %}
+    <h1>Выставь модуль!</h1>
     
-    <div class="container">
-        <h1>📝 Подача Нового Модуля</h1>
-        
-        <form id="submit_form" method="POST" action="{{ url_for('submit_module_api') }}">
+    <div class="form-container">
+        <form id="moduleSubmitForm" class="submit-form">
             
-            <label for="name">Название Модуля:</label>
-            <input type="text" id="name" name="name" required>
+            <div class="form-step">
+                <label>1. ПРИКРЕПИ МОДУЛЬ (код)</label>
+                <textarea id="module_code" name="module_code" placeholder="Вставьте сюда код вашего модуля..." rows="10" required></textarea>
+                <button type="button" class="btn neon-btn btn-secondary" onclick="analyzeCode()">
+                    <span class="material-icons" style="vertical-align: middle;">code</span> АНАЛИЗИРОВАТЬ КОМАНДЫ
+                </button>
+            </div>
+
+            <div class="form-step">
+                <label for="name">2. НАЗВАНИЕ:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
             
-            <label for="author">Автор (Ваш Telegram ник):</label>
-            <input type="text" id="author" name="author" value="{{ telegram_username }}" required>
+            <div class="form-step">
+                <label for="commands">3. КОМАНДЫ:</label>
+                <textarea id="commands" name="commands" rows="5" placeholder="например: .stop - останавливает Heroku. (Будет автоматически заполнено после анализа)" required></textarea>
+            </div>
+
+            <div class="form-step">
+                <label for="description">4. ОПИСАНИЕ:</label>
+                <textarea id="description" name="description" rows="5" required></textarea>
+            </div>
             
-            <label for="description">Краткое Описание (до 200 символов):</label>
-            <textarea id="description" name="description" rows="3" maxlength="200" required></textarea>
+            <div class="form-step">
+                <label>5. ПОСТАВЬ БАННЕР (URL)</label>
+                <input type="text" id="banner_url" name="banner_url" placeholder="URL изображения для баннера">
+                <button type="button" class="btn neon-btn btn-secondary" onclick="alert('TODO: Загрузка изображения')">
+                    <span class="material-icons" style="vertical-align: middle;">image</span> НАЖМИ (Загрузить файл)
+                </button>
+            </div>
             
-            <label for="module_code">Код Модуля (Python):</label>
-            <textarea id="module_code" name="module_code" rows="15" required></textarea>
-            
-            <button type="button" onclick="analyzeCode()" style="background-color: #f39c12;">🔍 Проанализировать Команды</button>
-            
-            <label>Обнаруженные Команды:</label>
-            <pre id="commands_output" style="background:#ecf0f1; padding: 10px; border-radius: 6px;"></pre>
-            <input type="hidden" id="commands_field" name="commands">
-            
-            <button type="submit" onclick="this.textContent='Отправка...'">🚀 Отправить на Модерацию</button>
+            <input type="hidden" id="author" name="author" value="{{ telegram_username }}">
+
+            <button type="submit" class="btn neon-btn" style="align-self: flex-end; font-size: 1.5em; padding: 15px 30px;">
+                ОПУБЛИКОВАТЬ
+            </button>
         </form>
+
+        <p id="message" style="margin-top: 20px; text-align: center; color: var(--color-cyan);"></p>
     </div>
-</body>
-</html>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Функция для анализа кода через API
+    function analyzeCode() {
+        const code = document.getElementById('module_code').value;
+        const commandsArea = document.getElementById('commands');
+        commandsArea.value = 'Анализ...';
+
+        fetch('{{ url_for("analyze_module_code") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                commandsArea.value = data.commands;
+            } else {
+                commandsArea.value = data.commands || 'Ошибка анализа.';
+            }
+        })
+        .catch(error => {
+            commandsArea.value = 'Ошибка: ' + error.message;
+        });
+    }
+
+    // Функция для отправки формы через API
+    document.getElementById('moduleSubmitForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        const messageElement = document.getElementById('message');
+
+        messageElement.textContent = 'Отправка на модерацию...';
+        
+        // Добавляем заглушку, так как загрузка файлов сложна, а в API у нас просто текстовые поля.
+        data.module_code = document.getElementById('module_code').value;
+        data.banner_url = document.getElementById('banner_url').value;
+
+        fetch('{{ url_for("submit_module_api") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            messageElement.textContent = data.message;
+            if (data.success) {
+                form.reset(); // Очистить форму после успешной отправки
+            }
+        })
+        .catch(error => {
+            messageElement.textContent = 'Ошибка отправки: ' + error.message;
+        });
+    });
+</script>
+{% endblock %}
