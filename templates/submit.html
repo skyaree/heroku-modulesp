@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Подать Модуль на Проверку</h1>
+
+<form id="submission-form">
+    <div class="mb-3">
+        <label for="moduleFile" class="form-label">Прикрепить файл модуля (.py) 📌</label>
+        <input class="form-control" type="file" id="moduleFile" required accept=".py">
+        <div class="form-text">Выберите файл, который вы хотите загрузить.</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="moduleName" class="form-label">Название модуля (Class Name)</label>
+        <input type="text" class="form-control" id="moduleName" required placeholder="Например: ModuarchMod">
+    </div>
+
+    <div class="mb-3">
+        <label for="authorName" class="form-label">Автор модуля (Ваш ник в Telegram)</label>
+        <input type="text" class="form-control" id="authorName" required 
+               value="{{ telegram_username|default('Укажите ник') }}" 
+               placeholder="Например: @MyAwesomeNick">
+        <div class="form-text">Предзаполнено из вашего профиля. Вы можете изменить.</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="moduleCommands" class="form-label">Команды модуля (Автоматический анализ)</label>
+        <textarea class="form-control" id="moduleCommands" rows="5" required
+                  placeholder="Команды будут автоматически вычислены после загрузки файла. Проверьте и отредактируйте их."></textarea>
+        <div id="commands-feedback" class="form-text"></div>
+    </div>
+
+    <div class="mb-3">
+        <label for="moduleDescription" class="form-label">Описание модуля</label>
+        <textarea class="form-control" id="moduleDescription" rows="3" required
+                  placeholder="Подробно опишите, что делает ваш модуль."></textarea>
+    </div>
+    
+    <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-secondary">Отмена</button>
+        <button type="submit" class="btn btn-success" id="submit-btn">Подтвердить</button>
+    </div>
+</form>
+
+<div id="alert-container" class="mt-4"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('moduleFile').addEventListener('change', analyzeCode);
+
+    async function analyzeCode(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const code = e.target.result;
+            const feedback = document.getElementById('commands-feedback');
+            const commandsArea = document.getElementById('moduleCommands');
+            
+            feedback.textContent = '⏳ Анализ кода через Gemini API...';
+            commandsArea.value = '';
+
+            try {
+                // Вызов API для анализа
+                const response = await fetch('{{ url_for("analyze_module_code") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    commandsArea.value = result.commands;
+                    feedback.textContent = '✅ Команды успешно проанализированы. Проверьте перед отправкой.';
+                    feedback.className = 'form-text text-success';
+                } else {
+                    commandsArea.value = result.commands; // Отображаем сообщение об ошибке, если Gemini не сработал
+                    feedback.textContent = result.commands || '❌ Ошибка анализа кода.';
+                    feedback.className = 'form-text text-danger';
+                }
+            } catch (error) {
+                feedback.textContent = '❌ Не удалось связаться с сервером API.';
+                feedback.className = 'form-text text-danger';
+            }
+        };
+        reader.readAsText(file);
+    }
+    
+    document.getElementById('submission-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = document.getElementById('moduleCommands').value; 
+        const fileInput = document.getElementById('moduleFile');
+        const file = fileInput.files[0];
+        let moduleCodeText = '';
+
+        if (!file) {
+            alert('Пожалуйста, прикрепите файл модуля.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            moduleCodeText = e.target.result;
+
+            const submissionData = {
+                name: document.getElementById('moduleName').value,
+                author: document.getElementById('authorName').value,
+                commands: document.getElementById('moduleCommands').value,
+                description: document.getElementById('moduleDescription').value,
+                module_code: moduleCodeText
+            };
+
+            document.getElementById('submit-btn').disabled = true;
+
+            // Вызов API для сохранения модуля
+            const response = await fetch('{{ url_for("submit_module_api") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(submissionData)
+            });
+
+            const result = await response.json();
+            document.getElementById('submit-btn').disabled = false;
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${result.success ? 'alert-success' : 'alert-danger'}`;
+            alertDiv.textContent = result.message;
+            document.getElementById('alert-container').innerHTML = '';
+            document.getElementById('alert-container').appendChild(alertDiv);
+            
+            if (result.success) {
+                 // Очистка формы или перенаправление
+                 setTimeout(() => window.location.href = '{{ url_for("modules_list") }}', 2000);
+            }
+        };
+        reader.readAsText(file);
+    });
+</script>
+{% endblock %}
