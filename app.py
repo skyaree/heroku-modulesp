@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 from dotenv import load_dotenv
 
@@ -12,31 +13,46 @@ from firebase_admin import credentials, firestore, auth
 load_dotenv() 
 
 # Используйте JSON-файл или переменные окружения для credentials
-# Рекомендуется использовать переменные окружения на Render
 try:
-    # Заглушка: На Render используйте переменную окружения с содержимым service account JSON
-    # Например, FIREBASE_CREDENTIALS_JSON
+    # Инициализация Firebase, как в оригинальном коде
     FIREBASE_CREDENTIALS_JSON = os.environ.get("FIREBASE_CREDENTIALS_JSON")
     if FIREBASE_CREDENTIALS_JSON:
         cred = credentials.Certificate(json.loads(FIREBASE_CREDENTIALS_JSON))
     else:
         # Для локального теста, используйте файл (не рекомендуется на продакшене)
+        # Убедитесь, что этот путь настроен или используйте env vars
         cred = credentials.Certificate("path/to/your/serviceAccountKey.json")
 
-    firebase_admin.initialize_app(cred)
+    # Инициализируем приложение только один раз
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
     db = firestore.client()
 except Exception as e:
-    print(f"Ошибка инициализации Firebase: {e}")
+    # print(f"Ошибка инициализации Firebase: {e}") 
     db = None # Установим None, чтобы приложение могло запуститься без БД
 
 app = Flask(__name__)
-# Установите безопасный секретный ключ (например, сгенерируйте 32-значную строку)
+# Установите безопасный секретный ключ 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "A_SUPER_SECRET_KEY_FALLBACK_2025")
 
 # --- PLACEHOLDERS ---
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
 
+# --- ДОБАВЛЕННЫЕ ДАННЫЕ ДЛЯ ОТОБРАЖЕНИЯ МОДУЛЕЙ ---
+MODULES_DATA = [
+    {'id': 1, 'title': 'Модуль 1: Базовая Аутентификация', 
+     'description': 'Демонстрация входа, выхода и защиты маршрутов.', 
+     'author': 'Иван Смирнов'},
+    {'id': 2, 'title': 'Модуль 2: Сбор Обратной Связи', 
+     'description': 'Простая форма для предложений новых функций.', 
+     'author': 'Петр Козлов'},
+    {'id': 3, 'title': 'Модуль 3: Панель Администратора', 
+     'description': 'Ограниченный доступ для управления контентом и просмотра предложений.', 
+     'author': 'Администратор'},
+]
+
 # --- Decorators and Auth Logic ---
+
 def get_user_data(uid):
     """Получает данные пользователя из Firestore, включая роль и ник."""
     if not db: return None 
@@ -46,11 +62,30 @@ def get_user_data(uid):
     except Exception:
         return None
 
+def get_auth_status():
+    """Возвращает статус авторизации и данные пользователя для шаблонов."""
+    logged_in = False
+    is_admin = False
+    user_data = None
+    try:
+        if 'token' in session:
+            # Проверяем токен
+            decoded_token = auth.verify_id_token(session['token'])
+            uid = decoded_token['uid']
+            user_data = get_user_data(uid)
+            logged_in = True
+            # Проверяем роль
+            if user_data and user_data.get('role') == 'admin':
+                is_admin = True
+    except Exception:
+        session.pop('token', None) # Сброс невалидного токена
+    return logged_in, is_admin, user_data
+
 def login_required(f):
     """Декоратор для проверки аутентификации."""
+    @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'token' not in session:
-            # Перенаправление на страницу входа, если нет токена
             return redirect(url_for('login_route')) 
         try:
             # Проверка токена (обязательно для API)
@@ -63,13 +98,22 @@ def login_required(f):
 
 def admin_required(f):
     """Декоратор для проверки прав администратора."""
+    @wraps(f)
     @login_required
     def decorated_function(*args, **kwargs):
+        # Логика проверки токена уже в login_required
         uid = auth.verify_id_token(session['token'])['uid']
         user_data = get_user_data(uid)
         if user_data and user_data.get('role') == 'admin':
             return f(*args, **kwargs)
-        return "Доступ запрещен", 403
+        
+        # Если не админ, но залогинен
+        logged_in, is_admin, _ = get_auth_status()
+        return render_template('error.html', 
+                               title="Доступ Запрещен", 
+                               message="У вас нет прав администратора.",
+                               logged_in=logged_in, 
+                               is_admin=is_admin), 403
     return decorated_function
 
 
@@ -79,45 +123,79 @@ def admin_required(f):
 @app.route('/modules')
 def modules_list():
     """Список всех модулей."""
+    # Вместо TODO используем заглушку MODULES_DATA и реальный статус аутентификации
+    logged_in, is_admin, _ = get_auth_status()
+    
     # TODO: Получение и отображение одобренных модулей из Firestore
-    return render_template('index.html', title="Каталог Модулей")
+    
+    return render_template('index.html', 
+                           title="Каталог Модулей", 
+                           modules=MODULES_DATA,
+                           logged_in=logged_in, 
+                           is_admin=is_admin)
 
 @app.route('/submit', methods=['GET'])
 @login_required
 def submit_module_form():
     """Форма для подачи модуля."""
+    logged_in, is_admin, user_data = get_auth_status()
+    
     # Получаем ник для предзаполнения
-    uid = auth.verify_id_token(session['token'])['uid']
-    user_data = get_user_data(uid)
     telegram_username = user_data.get('telegram_username', '') if user_data else ''
     
     return render_template('submit.html', 
                            title="Подать Модуль", 
-                           telegram_username=telegram_username)
+                           telegram_username=telegram_username,
+                           logged_in=logged_in, 
+                           is_admin=is_admin)
 
 @app.route('/panel/moderatemod')
 @admin_required
 def moderation_panel():
     """Панель модерации."""
+    logged_in, is_admin, _ = get_auth_status()
+    
     # TODO: Получение модулей со статусом 'pending'
-    return render_template('admin.html', title="Панель Модерации")
+    pending_modules = MODULES_DATA # Заглушка
+    
+    return render_template('admin.html', 
+                           title="Панель Модерации", 
+                           pending_modules=pending_modules,
+                           logged_in=logged_in, 
+                           is_admin=is_admin)
 
 @app.route('/account')
 @login_required
 def account_page():
     """Страница аккаунта."""
+    logged_in, is_admin, user_data = get_auth_status()
+    
     # TODO: Отображение данных пользователя (ник, дата регистрации)
-    uid = auth.verify_id_token(session['token'])['uid']
-    user_data = get_user_data(uid)
-    return render_template('account.html', title="Мой Аккаунт", user=user_data)
+    
+    return render_template('account.html', 
+                           title="Мой Аккаунт", 
+                           user=user_data,
+                           logged_in=logged_in, 
+                           is_admin=is_admin)
 
 @app.route('/login')
 def login_route():
     """Страница входа."""
+    logged_in, _, _ = get_auth_status()
+    
+    # Если пользователь уже залогинен, перенаправляем его в аккаунт
+    if logged_in:
+        return redirect(url_for('account_page'))
+        
     # Здесь должна быть кнопка "Войти через Google"
-    return render_template('login.html', title="Вход")
+    return render_template('login.html', 
+                           title="Вход",
+                           logged_in=logged_in, 
+                           is_admin=False)
+
 
 # --- CORE API ROUTES (JSON) ---
+# ... (Оставлены без изменений, так как они не затрагивают рендеринг HTML)
 
 @app.route('/api/v1/submit', methods=['POST'])
 @login_required
@@ -161,8 +239,6 @@ def analyze_module_code():
         return jsonify({"success": False, "commands": "Код не предоставлен."}), 400
 
     # --- ИНТЕГРАЦИЯ GEMINI ---
-    # В реальном коде здесь должен быть вызов Gemini API.
-    # Пример вызова с инструкцией:
     prompt = (
         "Проанализируй следующий Python-код модуля. 
         Найди все команды, помеченные декоратором @loader.command, и их описания (docstring). 
@@ -172,7 +248,7 @@ def analyze_module_code():
     )
     
     try:
-        # PLACEHOLDER: Вызов реального Gemini API
+        # ЗАГЛУШКА: Здесь должен быть вызов реального Gemini API
         # response = requests.post(
         #     "https://api.gemini.ai/v1/generate", 
         #     headers={"Authorization": f"Bearer {GEMINI_API_KEY}"},
@@ -190,6 +266,3 @@ def analyze_module_code():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-# Чтобы запустить на Render, используйте Gunicorn или Waitress, и Render автоматически обнаружит `app.py`.
-# Например, `gunicorn app:app`
