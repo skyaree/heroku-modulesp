@@ -4,6 +4,7 @@ import requests
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 from dotenv import load_dotenv
+from google import genai
 
 # --- Firebase Setup ---
 import firebase_admin
@@ -239,22 +240,23 @@ def analyze_module_code():
         return jsonify({"success": False, "commands": "Код не предоставлен."}), 400
 
     # --- ИНТЕГРАЦИЯ GEMINI ---
-    prompt = (
-        "Проанализируй следующий Python-код модуля. 
-        Найди все команды, помеченные декоратором @loader.command, и их описания (docstring). 
-        Верни результат в виде простого текста, где каждая команда и ее описание находятся на новой строке, 
-        например: .cmd1 - Описание команды 1."
-        f"\n\nКОД:\n{code}"
-    )
+    # ИСПРАВЛЕНО: Используем тройные кавычки (""") для многострочной f-строки
+    prompt = f"""Проанализируй следующий Python-код модуля. 
+Найди все команды, помеченные декоратором @loader.command, и их описания (docstring). 
+Верни результат в виде простого текста, где каждая команда и ее описание находятся на новой строке, 
+например: .cmd1 - Описание команды 1.
+
+КОД:
+{code}"""
     
     try:
         # ЗАГЛУШКА: Здесь должен быть вызов реального Gemini API
-        # response = requests.post(
-        #     "https://api.gemini.ai/v1/generate", 
-        #     headers={"Authorization": f"Bearer {GEMINI_API_KEY}"},
-        #     json={"prompt": prompt, "model": "gemini-2.5-flash"}
-        # )
-        # generated_text = response.json().get('text')
+         response = requests.post(
+             "https://api.gemini.ai/v1/generate", 
+             headers={"Authorization": f"Bearer {GEMINI_API_KEY}"},
+             json={"prompt": prompt, "model": "gemini-2.5-flash"}
+         )
+         generated_text = response.json().get('text')
 
         # Заглушка, имитирующая ответ
         generated_text = ".search - Ищет модули в каталоге.\n.fheta - Проверяет версию модуля."
