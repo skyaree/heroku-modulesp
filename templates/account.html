@@ -1,51 +1,42 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <header>
-        <nav>
-            <a href="{{ url_for('modules_list') }}">🏠 Главная</a>
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 style="text-align: left;">
+        ПРИВЕТ, {{ "АДМИН" if is_admin else "ЮЗЕР" }}!
+    </h1>
+
+    <div class="account-grid">
+        <div class="card account-info">
+            <img src="/static/user_avatar.png" alt="Аватар" class="account-avatar">
             
-            {% if logged_in %}
-                <a href="{{ url_for('account_page') }}">👤 Аккаунт</a>
+            <div class="account-data">
+                <p>UID: <strong>{{ user.uid | default('{uid}') }}</strong></p>
+                <p>ID TG: <strong>{{ user.id_tg | default('{tg-id}') }}</strong></p>
+                <p>USERNAME TG: <strong>{{ user.telegram_username | default('{tg-us}') }}</strong></p>
+                <p>РОЛЬ: <strong>{{ user.role_display | default('{ROLE}') }}</strong></p>
+                <p>Кол-во модулей: <strong>{{ user.modules_count | default('{mod}') }}</strong></p>
+                <p>Высокий рейтинг: <strong>{{ user.high_rating | default('{high-rate}') }}</strong></p>
+            </div>
+            
+            <div class="account-actions" style="margin-top: 30px;">
+                <button class="btn neon-btn btn-secondary" onclick="alert('TODO: Смена аватара')">ПОМЕНЯТЬ АВАТАР</button>
+                <a href="{{ url_for('submit_module_form') }}" class="btn neon-btn">ВСТАВИТЬ МОДУЛЬ</a>
+                <button class="btn neon-btn" onclick="alert('TODO: Мои модули')">МОИ МОДУЛИ</button>
+
                 {% if is_admin %}
-                    <a href="{{ url_for('moderation_panel') }}">🔑 Админ-Панель</a>
+                    <a href="{{ url_for('moderation_panel') }}" class="btn neon-btn" style="background-color: var(--color-blue); box-shadow: var(--shadow-blue);">
+                        МОДЕРАЦИЯ МОДУЛЕЙ
+                    </a>
                 {% endif %}
-                <a href="{{ url_for('login_route') }}" style="background-color: #e74c3c;">🚪 Выход (Локальный)</a>
-            {% else %}
-                <a href="{{ url_for('login_route') }}">➡️ Вход</a>
-            {% endif %}
-        </nav>
-    </header>
-    
-    <div class="container">
-        <h1>👤 {{ title }}</h1>
-        
-        <p>Ваши данные:</p>
-        
-        {% if user %}
-            <ul style="list-style-type: none; padding-left: 0;">
-                <li><strong>UID:</strong> {{ user.uid or 'N/A' }}</li>
-                <li><strong>Ник (Telegram):</strong> {{ user.telegram_username or 'Не указан' }}</li>
-                <li><strong>Роль:</strong> <span style="font-weight: bold; color: {% if is_admin %}#e67e22{% else %}#2c3e50{% endif %}">
-                    {{ user.role or 'Пользователь' }}
-                </span></li>
-            </ul>
-        {% else %}
-            <p class="error">Ошибка загрузки данных пользователя.</p>
-        {% endif %}
-        
-        {% if is_admin %}
-            <p style="margin-top: 20px;">
-                <a href="{{ url_for('moderation_panel') }}" class="suggest-link" style="background-color: #e67e22;">Перейти в Админ-Панель</a>
-            </p>
-        {% endif %}
-        
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Последние действия</h2>
+            <p>Тут будет список твоих последних загрузок или скачиваний.</p>
+            
+            <h2 style="margin-top: 30px;">Управление</h2>
+            <a href="{{ url_for('logout_route') }}" class="btn neon-btn" style="background-color: #f00;">Выйти</a>
+        </div>
     </div>
-</body>
-</html>
+{% endblock %}
