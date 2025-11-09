@@ -1,55 +1,47 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <header>
-        <nav>
-            <a href="{{ url_for('modules_list') }}">🏠 Главная</a>
-            
-            {% if logged_in %}
-                <a href="{{ url_for('account_page') }}">👤 Аккаунт</a>
-                {% if is_admin %}
-                    <a href="{{ url_for('moderation_panel') }}">🔑 Админ-Панель</a>
-                {% endif %}
-                <a href="{{ url_for('login_route') }}" style="background-color: #e74c3c;">🚪 Выход (Локальный)</a>
-            {% else %}
-                <a href="{{ url_for('login_route') }}">➡️ Вход</a>
-            {% endif %}
-        </nav>
-    </header>
-    
-    <div class="container">
-        <h1>{{ title }}</h1>
-        <p>Добро пожаловать в каталог! Здесь представлены все доступные модули с указанием авторов и кратким описанием.</p>
+{% extends "base.html" %}
 
-        <section class="modules-list">
-            <h2>📜 Доступные Модули</h2>
-            
-            <div class="modules-grid">
-                {% for module in modules %}
-                    <div class="module-card">
-                        <strong>{{ module.title }}</strong>
-                        <p>{{ module.description }}</p>
-                        <small>Автор: {{ module.author }}</small>
-                    </div>
-                {% endfor %}
+{% block content %}
+    <h1 style="text-align: left;">Все модули <span class="text-subtle">({{ total_modules }})</span></h1>
+    
+    <div class="flex-row">
+        <div class="module-controls">
+            <a href="{{ url_for('submit_module_form') }}" class="btn neon-btn btn-secondary">
+                <span class="material-icons" style="font-size: 18px; vertical-align: middle;">edit</span> ПОДАТЬ / СОЗДАТЬ
+            </a>
             </div>
-            
-            <div class="action-bar">
-                <p>Хотите поделиться своим кодом или предложить идею?</p>
-                {% if logged_in %}
-                    <a href="{{ url_for('submit_module_form') }}" class="suggest-link">➕ Подать Модуль</a>
-                {% else %}
-                    <a href="{{ url_for('login_route') }}" class="suggest-link" style="background-color: #f39c12;">Войдите для подачи</a>
-                {% endif %}
-            </div>
-        </section>
         
+        <div class="search-bar">
+            <input type="text" placeholder="Q | ПОИСК" style="width: 300px; margin-bottom: 0;">
+        </div>
     </div>
-</body>
-</html>
+    
+    <div class="card" style="text-align: center; height: 100px; background: linear-gradient(90deg, var(--color-violet), var(--color-blue)); margin-bottom: 40px;">
+        <h3 style="color: white; text-shadow: none;">[БАННЕР]</h3>
+    </div>
+    
+    <div class="modules-list">
+        {% for module in modules %}
+        <a href="{{ url_for('module_detail', module_id=module.id) }}" class="module-item">
+            <div class="module-item-content">
+                <h3>{{ module.title }}</h3>
+                <p class="text-subtle">{{ module.description }}</p>
+                <div class="module-item-rating">
+                    <span class="stars">★★★★☆</span>
+                    ({{ module.rating }})
+                </div>
+            </div>
+            <div class="module-item-banner">
+                </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="pagination">
+        <a href="#"><span class="material-icons">chevron_left</span></a>
+        <a href="#" class="current-page">1</a>
+        <a href="#">2</a>
+        <span class="text-subtle">...</span>
+        <a href="#">97</a>
+        <a href="#"><span class="material-icons">chevron_right</span></a>
+    </div>
+{% endblock %}
