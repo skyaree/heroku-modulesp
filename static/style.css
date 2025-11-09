@@ -1,0 +1,224 @@
+/* ----------------------------------------------------------------
+   1. BASE STYLES & RESET (Базовые стили)
+---------------------------------------------------------------- */
+:root {
+    --primary-color: #3498db; /* Blue */
+    --secondary-color: #2ecc71; /* Green */
+    --text-color: #2c3e50; /* Dark Navy */
+    --bg-color: #f4f6f9; /* Light Gray Background */
+    --card-bg: #ffffff;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding-top: 60px; /* Space for fixed header */
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.container {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+/* ----------------------------------------------------------------
+   2. HEADER & NAVIGATION (Шапка и Навигация)
+---------------------------------------------------------------- */
+header {
+    background: var(--text-color);
+    color: #fff;
+    padding: 10px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+nav a {
+    color: #ecf0f1;
+    text-decoration: none;
+    padding: 10px 15px;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+nav a:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+/* ----------------------------------------------------------------
+   3. FORMS & BUTTONS (Формы и Кнопки)
+---------------------------------------------------------------- */
+h1 {
+    color: var(--primary-color);
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    font-size: 2em;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 0;
+}
+
+label {
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+input[type="email"], 
+input[type="password"],
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    box-sizing: border-box; /* Important for width calculation */
+    transition: border-color 0.2s;
+}
+
+input:focus, textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+button[type="submit"], .suggest-link {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+}
+
+button[type="submit"]:hover, .suggest-link:hover {
+    background-color: #27ae60;
+}
+
+.error {
+    color: #e74c3c;
+    font-weight: 600;
+    border: 1px solid #e74c3c;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    background-color: #fadedf;
+}
+
+/* ----------------------------------------------------------------
+   4. MODULES SECTION (Раздел Модулей)
+---------------------------------------------------------------- */
+.modules-list {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px dashed #ecf0f1;
+}
+
+.modules-list h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.module-card {
+    background: #fdfdfd;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid var(--primary-color);
+    transition: transform 0.2s;
+}
+
+.module-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.module-card strong {
+    font-size: 1.2em;
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-color);
+}
+
+.module-card small {
+    display: block;
+    margin-top: 10px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+}
+
+/* ----------------------------------------------------------------
+   5. ADMIN & ACCOUNT (Аккаунт и Админ)
+---------------------------------------------------------------- */
+.admin-info {
+    border-left: 5px solid #e67e22; /* Orange for Admin */
+    padding-left: 20px;
+}
+
+.admin-info ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    body {
+        padding-top: 90px;
+    }
+    nav {
+        flex-direction: column;
+        gap: 5px;
+        padding: 10px;
+    }
+    .container {
+        margin: 20px;
+        padding: 15px;
+    }
+    nav a {
+        width: 100%;
+        text-align: center;
+    }
+}
