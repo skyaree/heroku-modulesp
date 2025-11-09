@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card module-detail">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+        <div>
+            <h1>{{ module.title }}</h1>
+            <p class="text-subtle" style="font-size: 1.2em;">СОЗДАТЕЛЬ: <strong>{{ module.author }}</strong></p>
+            <div style="font-size: 1.5em; margin-top: 10px;">
+                {Рейтинг} <strong style="color: var(--color-cyan);">({{ module.rating }})</strong>
+                <span class="stars" style="color: gold; margin-left: 10px;">★★★★☆</span>
+            </div>
+        </div>
+        <div class="module-detail-banner" style="width: 250px; height: 150px; background: linear-gradient(135deg, var(--color-blue), var(--color-violet)); border-radius: 8px;">
+            </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div>
+            <h2>ОПИСАНИЕ</h2>
+            <p style="white-space: pre-wrap;">{{ module.description }}</p>
+        </div>
+        
+        <div>
+            <h2>КОМАНДЫ</h2>
+            <ul style="list-style: none; padding-left: 0;">
+                {% for command in module.commands %}
+                    <li style="margin-bottom: 10px; border-left: 3px solid var(--color-cyan); padding-left: 10px;">
+                        {{ command }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{{ url_for('modules_list') }}" class="btn neon-btn btn-secondary">
+            <span class="material-icons" style="vertical-align: middle;">arrow_back</span> НАЗАД
+        </a>
+        <button class="btn neon-btn" onclick="alert('TODO: Скачать модуль')">СКАЧАТЬ МОДУЛЬ</button>
+    </div>
+</div>
+{% endblock %}
